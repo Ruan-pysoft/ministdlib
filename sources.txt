@@ -1,0 +1,8 @@
+inline assembly -- A Practical Guide to GCC Inline Assembly -- https://blog.alex.balgavy.eu/a-practical-guide-to-gcc-inline-assembly/
+syscalls -- x86 Assembly/Interfacing with Linux -- https://en.wikibooks.org/wiki/X86_Assembly/Interfacing_with_Linux
+memory allocators -- Memory Allocators 101 - Write a simple memory allocator -- https://arjunsreedharan.org/post/148675821737
+inline assembly -- How to Use Inline Assembly Language in C Code -- https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html
+suggestions/inspiration -- Re-designing the standard library -- https://www.reddit.com/r/C_Programming/comments/feduq2
+plan9 manpages -- plan 9 - 2 -- https://man.cat-v.org/plan_9/2/
+	especially string.h -- string -- https://man.cat-v.org/plan_9/2/string
+brainstorming using chatgpt -- [link to be added later]

@@ -1,0 +1,37 @@
+refactor code style
+	k&r function decl to ISO c decl
+	ret name(args...) -> ret \n name(args...)
+
+change ref and arr to ref and own
+	-> rather than distinguishing pointers & arrays,
+	   distinguished owned & borrowed values
+
+Actually make memory allocation work
+	Currently calling syscall #0, not actually sbrk...
+
+Move over from sbrk to mmap
+	Maybe also use sbrk for small values?
+
+implement multithreading
+
+rethink strings.h
+
+implement buffered io
+
+fix all the warnings the compiler's giving me
+	especially those relating to incorrect c89
+
+...
+
+printf-style suite
+
+scanf-style suite
+
+high-level input (have puts, putc, etc, but no getc, gets, getline, etc)
+
+ANSI escape sequence helpers
+
+proper error handling (enum?)
+	+ errstr
+
+move argv & envp to gobal (read-only) structure
