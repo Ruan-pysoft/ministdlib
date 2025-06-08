@@ -1,10 +1,11 @@
-refactor code style
-	k&r function decl to ISO c decl
-	ret name(args...) -> ret \n name(args...)
+add proper const qualifiers to pointers where applicable
 
-change ref and arr to ref and own
-	-> rather than distinguishing pointers & arrays,
-	   distinguished owned & borrowed values
+More complete memory.h
+	memcpy, memmove, etc
+	make memzero more efficient
+
+Add dedicated close function to FILE
+	should always be called to free resources when done with file
 
 Actually make memory allocation work
 	Currently calling syscall #0, not actually sbrk...

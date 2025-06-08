@@ -4,7 +4,7 @@
 #include "ministd_io.h"
 #include "ministd_types.h"
 
-void exit(int); /* exitcode */
+void exit(int exitcode);
 void _start(void);
 
 #endif /* _RM_STD_H */

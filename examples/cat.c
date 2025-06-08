@@ -5,8 +5,8 @@
 
 char buf[BUFCAP];
 
-int main(n, v)
-	str arr v;
+int
+main(int n, char ref ref v)
 {
 	isz bytes_read;
 

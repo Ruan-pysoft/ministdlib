@@ -1,6 +1,7 @@
 #include "ministd_io.h"
 
-#include "ministd.h"
+#include "ministd_syscall.h"
+#include "ministd_string.h"
 
 #include <asm/unistd.h>
 
@@ -8,160 +9,141 @@ FILE ref stdin;
 FILE ref stdout;
 FILE ref stderr;
 
-struct RAW_FILE raw_stdin;
-struct RAW_FILE raw_stdout;
-struct RAW_FILE raw_stderr;
-
-FILE raw_file_ptrs;
-
 struct RAW_FILE {
 	FILE ptrs;
 	int fd;
 };
-isz raw_file_read(file, buf, cap)
-	struct RAW_FILE ref file;
-	void arr buf;
-	usz cap;
+
+static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap);
+static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap);
+static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op);
+static FILE raw_file_ptrs = (FILE) {
+	.read = (FILE_read_t)raw_file_read,
+	.write = (FILE_write_t)raw_file_write,
+	.run = (FILE_run_t)raw_file_misc,
+};
+
+static struct RAW_FILE raw_stdin;
+static struct RAW_FILE raw_stdout;
+static struct RAW_FILE raw_stderr;
+
+static isz
+raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap)
 {
-	return fd_read(file->fd, buf, cap);
+	return fd_read(this->fd, buf, cap);
 }
-isz raw_file_write(file, buf, cap)
-	struct RAW_FILE ref file;
-	const void arr buf;
-	usz cap;
+static isz
+raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap)
 {
-	return fd_write(file->fd, buf, cap);
+	return fd_write(this->fd, buf, cap);
 }
-isz raw_file_misc(file, op)
-	struct RAW_FILE ref file;
-	enum FILE_OP op;
+static isz
+raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op)
 {
 	isz r;
 	r = 0;
 
 	switch (op) {
 		case FO_CLOSE: {
-			fd_close(file->fd);
+			fd_close(this->fd);
 		break; }
 	}
 
 	return r;
 }
 
-isz fd_read(fd, buf, cap)
-	void arr buf;
-	usz cap;
+isz
+fd_read(int fd, ptr buf, usz cap)
 {
-	long lfd;
+	isz lfd, res;
 	lfd = fd;
 
-	__asm__ volatile(
-		"mov %[fd], %%rdi;" /* file discriptor */
-		"mov %[buf], %%rsi;" /* buffer */
-		"syscall;"
-		: /* outputs */
-		: "a" ((long)__NR_read), [fd] "r" (lfd), [buf] "r" (buf), "d" (cap) /* inputs */
-		: "rdi", "rsi" /* clobber */
-	);
+	_syscall3(__NR_read, res, lfd, buf, cap);
+
+	return res;
 }
-isz fd_write(fd, buf, cap)
-	const void arr buf;
-	usz cap;
+isz
+fd_write(int fd, const ptr buf, usz cap)
 {
-	long lfd;
+	isz lfd, res;
 	lfd = fd;
 
-	__asm__ volatile(
-		"mov %[fd], %%rdi;" /* file discriptor */
-		"mov %[buf], %%rsi;" /* buffer */
-		"syscall;"
-		: /* outputs */
-		: "a" ((long)__NR_write), [fd] "r" (lfd), [buf] "r" (buf), "d" (cap) /* inputs */
-		: "rdi", "rsi" /* clobber */
-	);
+	_syscall3(__NR_write, res, lfd, buf, cap);
+
+	return res;
 }
-void fd_close(fd)
+void
+fd_close(int fd)
 {
-	long lfd;
+	isz lfd, res;
 	lfd = fd;
 
-	__asm__ volatile(
-		"mov %[fd], %%rdi;" /* file descriptor */
-		"syscall;"
-		: /* outputs */
-		: "a" ((long)__NR_close), [fd] "r" (lfd) /* inputs */
-		: "rdi" /* clobber */
-	);
+	_syscall1(__NR_close, res, lfd);
 }
 
-isz read(file, buf, cap)
-	FILE ref file;
-	void arr buf;
-	usz cap;
+isz
+read(FILE ref file, ptr buf, usz cap)
 {
 	return file->read(file, buf, cap);
 }
-isz write(file, buf, cap)
-	FILE ref file;
-	const void arr buf;
-	usz cap;
+isz
+write(FILE ref file, const ptr buf, usz cap)
 {
 	return file->write(file, buf, cap);
 }
-void close(file)
-	FILE ref file;
+void
+close(FILE ref file)
 {
 	file->run(file, FO_CLOSE);
 }
 
-int fputs(s, f)
-	cstr s;
-	FILE ref f;
+int
+fputs(const char ref str, FILE ref file)
 {
 	isz bytes_written;
-	const usz len = strlen(s);
+	const usz len = strlen(str);
 
-	bytes_written = write(f, s, len);
+	bytes_written = write(file, (ptr)str, len);
 	if (bytes_written != len) {
 		return EOF;
 	} else {
 		return bytes_written;
 	}
 }
-int fputc(c, f)
-	char c;
-	FILE ref f;
+int
+fputc(char c, FILE ref file)
 {
-	if (write(f, &c, 1) == 1) {
+	if (write(file, &c, 1) == 1) {
 		return c;
 	} else {
 		return EOF;
 	}
 }
-int puts(s)
-	cstr s;
+int
+puts(const char ref str)
 {
 	int bytes_written;
 
-	bytes_written = fputs(s, stdout);
+	bytes_written = fputs(str, stdout);
 	if (bytes_written >= 0 && fputc(10, stdout) == 10) {
 		return bytes_written+1;
 	} else {
 		return EOF;
 	}
 }
-int putc(c)
-	char c;
+int
+putc(char c)
 {
 	fputc(c, stdout);
 }
 
-void _minilib_io_init()
+void
+ministd_io_init(void)
 {
 	raw_file_ptrs = (FILE) {
-		.read = raw_file_read,
-		.write = raw_file_write,
-		.run = raw_file_misc,
+		.read = (FILE_read_t)raw_file_read,
+		.write = (FILE_write_t)raw_file_write,
+		.run = (FILE_run_t)raw_file_misc,
 	};
 
 	raw_stdin = (struct RAW_FILE) {

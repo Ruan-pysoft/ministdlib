@@ -1,8 +1,9 @@
 #include "ministd.h"
 #include "ministd_io.h"
+#include "ministd_types.h"
 
-int main(n, a)
-	str arr a;
+int
+main(int n, char ref ref a)
 {
 	int i;
 

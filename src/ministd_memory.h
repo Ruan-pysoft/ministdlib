@@ -3,29 +3,30 @@
 
 #include "ministd_types.h"
 
-ptr alloc(usz);
-ptr nalloc(usz, usz);
-ptr realloc(ptr, usz);
-ptr nrealloc(ptr, usz, usz);
-void free(ptr);
+own_ptr alloc(usz bytes);
+own_ptr nalloc(usz size, usz n);
+own_ptr realloc(own_ptr buf, usz bytes);
+own_ptr nrealloc(own_ptr buf, usz size, usz n);
+void free(own_ptr buf);
 
-void memzero(ptr, usz);
-void nmemzero(ptr, usz, usz);
+void memzero(ptr buf, usz bytes);
+void nmemzero(ptr buf, usz size, usz n);
 
+typedef own_ptr (*Allocator_alloc_t)(struct Allocator ref this, usz bytes);
+typedef own_ptr (*Allocator_realloc_t)(struct Allocator ref this, own_ptr buf, usz bytes);
+typedef void (*Allocator_free_t)(struct Allocator ref this, own_ptr buf);
 typedef struct Allocator {
-	ptr (*alloc)(struct Allocator ref, usz);
-	ptr (*realloc)(struct Allocator ref, ptr, usz);
-	void (*free)(struct Allocator ref, ptr);
+	Allocator_alloc_t alloc;
+	Allocator_realloc_t realloc;
+	Allocator_free_t free;
 } Allocator;
 
-ptr a_alloc(Allocator ref, usz);
-ptr a_nalloc(Allocator ref, usz, usz);
-ptr a_realloc(Allocator ref, ptr, usz);
-ptr a_nrealloc(Allocator ref, ptr, usz, usz);
-void a_free(Allocator ref, ptr);
+own_ptr a_alloc(Allocator ref alloc, usz bytes);
+own_ptr a_nalloc(Allocator ref alloc, usz size, usz n);
+own_ptr a_realloc(Allocator ref alloc, own_ptr buf, usz bytes);
+own_ptr a_nrealloc(Allocator ref alloc, own_ptr buf, usz size, usz n);
+void a_free(Allocator ref alloc, ptr buf);
 
 extern Allocator ref stack_allocator;
-
-Allocator ref a_newarena(ptr, usz);
 
 #endif /* _RM_STD_MEMORY_H */

@@ -1,31 +1,31 @@
 #include "ministd.h"
+
 #include "ministd_io.h"
+#include "ministd_syscall.h"
 
 #include <asm/unistd.h>
 
-void exit(code)
+void
+exit(int exitcode)
 {
-	long lcode;
-	lcode = code;
+	isz lcode, dummy;
+	lcode = exitcode;
 
-	__asm__ volatile(
-		"mov %[code], %%rdi;" /* exit code */
-		"syscall;"
-		: /* outputs */
-		: "a" ((long)__NR_exit), [code] "r" (lcode) /* inputs */
-		: "rdi" /* clobber */
-	);
+	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();
 }
-int main(int, str arr);
-void setup()
+int main(int argc, char ref ref argv);
+extern void ministd_io_init(void);
+void
+setup(void)
 {
-	_minilib_io_init();
+	ministd_io_init();
 }
-void _start()
+void
+_start(void)
 {
 	int argc;
-	str arr argv;
+	char ref ref argv;
 
 	__asm__ volatile(
 		"mov %%rsp, %%rax;" /* sp -> ax */

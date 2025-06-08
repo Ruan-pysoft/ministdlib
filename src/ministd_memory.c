@@ -2,22 +2,22 @@
 
 #include "ministd_syscall.h"
 
-ptr sbrk(isz n);
-ptr
+own_ptr sbrk(isz n);
+own_ptr
 sbrk(isz n)
 {
-	ptr res;
+	own_ptr res;
 	_syscall1(__NR_sbrk, res, n);
 	return res;
 }
 
-ptr mmap_alloc(Allocator ref this, usz n);
-ptr mmap_realloc(Allocator ref this, ptr p, usz n);
-void mmap_free(Allocator ref this, ptr p);
-static Allocator mmap_allocator = (Allocator) {
-	.alloc = mmap_alloc,
-	.realloc = mmap_realloc,
-	.free = mmap_free,
+own_ptr std_alloc(Allocator ref this, usz bytes);
+own_ptr std_realloc(Allocator ref this, own_ptr buf, usz bytes);
+void std_free(Allocator ref this, own_ptr buf);
+static Allocator std_allocator = (Allocator) {
+	.alloc = (Allocator_alloc_t)std_alloc,
+	.realloc = (Allocator_realloc_t)std_realloc,
+	.free = (Allocator_free_t)std_free,
 };
 typedef char ALIGN[16];
 typedef union header {
@@ -27,33 +27,33 @@ typedef union header {
 		union header ref next;
 	} s;
 	ALIGN stub;
-} mmap_header_t;
-mmap_header_t ref head, ref tail;
+} std_header_t;
+std_header_t ref head, ref tail;
 
-mmap_header_t ref mmap_get_free_block(usz n);
-ptr
-mmap_alloc(Allocator ref this, usz n)
+std_header_t ref std_get_free_block(usz bytes);
+own_ptr
+std_alloc(Allocator ref this, usz bytes)
 {
 	usz total_size;
-	ptr block;
-	mmap_header_t ref header;
+	own_ptr block;
+	std_header_t ref header;
 
-	if (!n) return 0;
+	if (!bytes) return 0;
 
-	header = mmap_get_free_block(n);
+	header = std_get_free_block(bytes);
 	if (header) {
 		header->s.is_free = 0;
 		return (ptr)(header + 1);
 	}
 
-	total_size = sizeof(mmap_header_t) + n;
+	total_size = sizeof(std_header_t) + bytes;
 	block = sbrk(total_size);
 	if (block == (ptr) -1) {
 		return 0;
 	}
 
 	header = block;
-	header->s.size = n;
+	header->s.size = bytes;
 	header->s.is_free = 0;
 	header->s.next = 0;
 	if (!head) head = header;
@@ -62,47 +62,47 @@ mmap_alloc(Allocator ref this, usz n)
 
 	return (ptr)(header + 1);
 }
-mmap_header_t ref
-mmap_get_free_block(usz n)
+std_header_t ref
+std_get_free_block(usz bytes)
 {
-	mmap_header_t ref res;
+	std_header_t ref res;
 
 	for (res = head; res != 0; res = res->s.next) {
-		if (res->s.is_free && res->s.size >= n) return res;
+		if (res->s.is_free && res->s.size >= bytes) return res;
 	}
 
 	return res;
 }
-ptr
-mmap_realloc(Allocator ref this, ptr p, usz n)
+own_ptr
+std_realloc(Allocator ref this, own_ptr buf, usz bytes)
 {
-	mmap_header_t ref header;
-	ptr ret;
-	if (!p || !n) return mmap_alloc(this, n);
-	header = (mmap_header_t*)p - 1;
-	if (header->s.size >= n) return p;
-	ret = mmap_alloc(this, n);
+	std_header_t ref header;
+	own_ptr ret;
+	if (!buf || !bytes) return std_alloc(this, bytes);
+	header = (std_header_t*)buf - 1;
+	if (header->s.size >= bytes) return buf;
+	ret = std_alloc(this, bytes);
 	if (ret) {
 		usz i;
 
 		for (i = 0; i < header->s.size; ++i) {
-			((char*)ret)[i] = ((char*)p)[i];
+			((char*)ret)[i] = ((char*)buf)[i];
 		}
-		mmap_free(this, p);
 	}
+	std_free(this, buf);
 	return ret;
 }
 void
-mmap_free(Allocator ref this, ptr p)
+std_free(Allocator ref this, own_ptr buf)
 {
-	mmap_header_t *header, *tmp;
+	std_header_t ref header, ref tmp;
 	ptr programbreak;
 
-	if (!p) return;
-	header = ((mmap_header_t*)p) - 1;
+	if (!buf) return;
+	header = ((std_header_t*)buf) - 1;
 
 	programbreak = sbrk(0);
-	if ((char*)p + header->s.size == programbreak) {
+	if ((char*)buf + header->s.size == programbreak) {
 		if (head == tail) {
 			head = tail = 0;
 		} else {
@@ -114,63 +114,64 @@ mmap_free(Allocator ref this, ptr p)
 				}
 			}
 		}
-		sbrk(0 - sizeof(mmap_header_t) - header->s.size);
+		sbrk(0 - sizeof(std_header_t) - header->s.size);
 		return;
 	}
 	header->s.is_free = 1;
 }
 
-ptr
-alloc(usz n)
+own_ptr
+alloc(usz bytes)
 {
-	return a_alloc(&mmap_allocator, n);
+	return a_alloc(&std_allocator, bytes);
 }
-ptr
+own_ptr
 nalloc(usz size, usz n)
 {
-	return a_nalloc(&mmap_allocator, size, n);
+	return a_nalloc(&std_allocator, size, n);
 }
-ptr
-realloc(ptr p, usz n)
+own_ptr
+realloc(own_ptr buf, usz bytes)
 {
-	return a_realloc(&mmap_allocator, p, n);
+	return a_realloc(&std_allocator, buf, bytes);
 }
-ptr
-nrealloc(ptr p, usz size, usz n)
+own_ptr
+nrealloc(own_ptr buf, usz size, usz n)
 {
-	return a_nrealloc(&mmap_allocator, p, size, n);
+	return a_nrealloc(&std_allocator, buf, size, n);
 }
 void
-free(ptr p)
+free(own_ptr buf)
 {
-	return a_free(&mmap_allocator, p);
+	return a_free(&std_allocator, buf);
 }
 
 void
-memzero(ptr p, usz n)
+memzero(own_ptr buf, usz bytes)
 {
 	usz i;
 
-	for (i = 0; i < n; ++i) {
-		((char*)p)[i] = 0;
+	for (i = 0; i < bytes; ++i) {
+		((char*)buf)[i] = 0;
 	}
 }
-void nmemzero(ptr p, usz size, usz n)
+void
+nmemzero(own_ptr buf, usz size, usz n)
 {
 	usz total_size;
 
 	if (!size || !n) return;
 	total_size = size * n;
 	if (total_size / n != size) return;
-	return memzero(p, total_size);
+	return memzero(buf, total_size);
 }
 
-ptr
-a_alloc(Allocator ref this, usz n)
+own_ptr
+a_alloc(Allocator ref this, usz bytes)
 {
-	return this->alloc(this, n);
+	return this->alloc(this, bytes);
 }
-ptr
+own_ptr
 a_nalloc(Allocator ref this, usz size, usz n)
 {
 	usz total_size;
@@ -180,96 +181,52 @@ a_nalloc(Allocator ref this, usz size, usz n)
 	if (total_size / n != size) return 0;
 	return a_alloc(this, total_size);
 }
-ptr
-a_realloc(Allocator ref this, ptr p, usz n)
+own_ptr
+a_realloc(Allocator ref this, own_ptr buf, usz bytes)
 {
-	return this->realloc(this, p, n);
+	return this->realloc(this, buf, bytes);
 }
-ptr
-a_nrealloc(Allocator ref this, ptr p, usz size, usz n)
+own_ptr
+a_nrealloc(Allocator ref this, own_ptr buf, usz size, usz n)
 {
 	usz total_size;
 
 	if (!size || !n) {
-		free(p);
+		free(buf);
 		return 0;
 	}
 	total_size = size * n;
 	if (total_size / n != size) {
-		free(p);
+		free(buf);
 		return 0;
 	}
-	return a_realloc(this, p, total_size);
+	return a_realloc(this, buf, total_size);
 }
 void
-a_free(Allocator ref this, ptr p)
+a_free(Allocator ref this, own_ptr buf)
 {
-	return this->free(this, p);
+	return this->free(this, buf);
 }
 
-ptr stack_alloc(Allocator ref this, usz n);
-ptr stack_realloc(Allocator ref this, ptr p, usz n);
-void stack_free(Allocator ref this, ptr p);
+own_ptr stack_alloc(Allocator ref this, usz bytes);
 static Allocator stack_allocator_raw = (Allocator) {
-	.alloc = stack_alloc,
-	.realloc = stack_realloc,
-	.free = stack_free,
+	.alloc = (Allocator_alloc_t)stack_alloc,
+	.realloc = NULL,
+	.free = NULL,
 };
 Allocator ref stack_allocator = &stack_allocator_raw;
-ptr
-stack_alloc(Allocator ref this, usz n)
+own_ptr
+stack_alloc(Allocator ref this, usz bytes)
 {
-	ptr res;
+	own_ptr res;
 
 	__asm__ volatile(
 		"mov %%rsp, %[res];"
 		"sub %[n], %%rsp;"
 		: [res] "=g" (res)
-		: [n] "g" (n)
+		: [n] "g" (bytes)
 		: "rsp"
 	);
-}
-ptr
-stack_realloc(Allocator ref this, ptr p, usz n)
-{
-	return 0;
-}
-void
-stack_free(Allocator ref this, ptr p)
-{
-	return;
-}
 
-ptr arena_alloc(Allocator ref this, usz n);
-ptr arena_realloc(Allocator ref this, ptr p, usz n);
-void arena_free(Allocator ref this, ptr p);
-static Allocator arena_vtable = (Allocator) {
-	.alloc = arena_alloc,
-	.realloc = arena_realloc,
-	.free = arena_free,
-};
-struct ArenaAllocator {
-	Allocator vtable;
-	ptr buf;
-	usz bufsize;
-};
-ptr
-arena_alloc(Allocator ref this, usz n)
-{
-	return 0;
-}
-ptr
-arena_realloc(Allocator ref this, ptr p, usz n)
-{
-	return 0;
-}
-void
-arena_free(Allocator ref this, ptr p)
-{
-	return;
-}
-
-Allocator ref a_newarena(ptr buf, usz bufsize)
-{
-	return 0;
+	return res;
 }

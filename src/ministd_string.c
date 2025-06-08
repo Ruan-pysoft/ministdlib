@@ -2,195 +2,206 @@
 
 #include "ministd_memory.h"
 
-usz strlen(s)
-	cstr s;
+usz
+strlen(const char ref cstr)
 {
-	int len;
+	usz len;
 
-	for (len = 0; s[len] != 0; ++len);
+	for (len = 0; cstr[len] != 0; ++len);
+
+	return len;
+}
+usz
+strnlen(const char ref cstr, usz maxlen)
+{
+	usz len;
+
+	for (len = 0; cstr[len] != 0 && len < maxlen; ++len);
 
 	return len;
 }
 
-String ref s_new()
+String own
+s_new(void)
 {
 	return s_newalloc(128);
 }
-void s_free(s)
-	String ref s;
+void
+s_free(String own this)
 {
-	if (!s->extbuf) free(s->base);
-	free(s);
+	if (this->owned_buffer) free(this->base);
+	free(this);
 }
-String ref s_newalloc(n)
-	usz n;
+String own
+s_newalloc(usz n)
 {
-	String ref result;
+	String own result;
+
+	if (n == 0) return NULL;
+
 	result = alloc(sizeof(String));
-	if (result == 0) return 0;
+	if (result == NULL) return NULL;
 
 	result->base = alloc(n);
-	if (result->base == 0) {
+	if (result->base == NULL) {
 		free(result);
-		return 0;
+		return NULL;
 	}
 
 	result->end = result->base + n;
 	result->ptr = result->base;
 	*result->ptr = 0;
 
-	result->extbuf = 0;
+	result->owned_buffer = true;
 
 	return result;
 }
-String ref s_array(p, n)
-	str p;
-	usz n;
+StringView own
+sv_new(const char ref cstr, usz cstr_cap)
 {
-	String ref result;
-	result = alloc(sizeof(String));
-	if (result == 0) return 0;
+	StringView own result;
+	usz len;
 
-	result->base = (str)p;
-	result->end = result->base + strlen(p);
-	result->ptr = result->end;
+	len = strnlen(cstr, cstr_cap);
+	if (len == cstr_cap) return NULL;
 
-	result->extbuf = 1;
+	result = alloc(sizeof(StringView));
+	if (result == NULL) return NULL;
+
+	result->base = cstr;
+	result->end = result->base + cstr_cap;
+	result->ptr = result->base + len;
 
 	return result;
 }
-String ref s_frombuf(b, n)
-	ptr b;
-usz n;
+String own
+s_frombuf(ptr buf, usz size)
 {
-	String ref result;
-	result = alloc(sizeof(String));
-	if (result == 0) return 0;
+	String own result;
 
-	result->base = b;
-	result->end = b + n;
+	if (size == 0) return NULL;
+
+	result = alloc(sizeof(String));
+	if (result == NULL) return NULL;
+
+	result->base = buf;
+	result->end = buf + size;
 	result->ptr = result->end;
 	*result->ptr = 0;
 
-	result->extbuf = 1;
+	result->owned_buffer = false;
 
 	return result;
 }
-String ref s_grow(s, n)
-	String ref s;
-	usz n;
+String own
+s_grow(String own this, usz growby)
 {
-	const usz cap = s->end - s->base;
-	const usz len = s_len(s);
+	const usz cap = this->end - this->base;
+	const usz len = s_len(this);
 
-	if (s->extbuf) {
-		s_free(s);
-		return 0;
+	if (!this->owned_buffer) {
+		s_free(this);
+		return NULL;
 	}
 
-	s->base = realloc(s->base, cap+n);
-	if (s->base == 0) {
-		s_free(s);
-		return 0;
+	this->base = realloc(this->base, cap+growby);
+	if (this->base == NULL) {
+		s_free(this);
+		return NULL;
 	}
 
-	s->end = s->base + cap+n;
-	s->ptr = s->base + len;
+	this->end = this->base + cap+growby;
+	this->ptr = this->base + len;
 
-	return s;
+	return this;
 }
 
-void s_putc(s, c)
-	String ref s;
-	char c;
+void
+s_putc(String ref this, char c)
 {
-	*(s->ptr++) = c;
-	if (s->ptr == s->end) s = s_grow(s, s_len(s));
-	*s->ptr = 0;
+	*(this->ptr++) = c;
+	if (this->ptr == this->end) this = s_grow(this, s_len(this));
+	if (this != NULL) *this->ptr = 0;
 }
-void s_terminate(s)
-	String ref s;
+void
+s_terminate(String ref this)
 {
-	*s->ptr = 0;
+	*this->ptr = 0;
 }
-String ref s_reset(s)
-	String ref s;
+String own
+s_reset(String own this)
 {
-	s->ptr = s->base;
-	*s->ptr = 0;
+	this->ptr = this->base;
+	*this->ptr = 0;
 
-	return s;
+	return this;
 }
-String ref s_restart(s)
-	String ref s;
+StringView own
+s_restart(StringView own this)
 {
-	s->ptr = s->base;
+	this->ptr = this->base;
+
+	return this;
 }
-String ref s_append(s, p)
-	String ref s;
-	str p;
+String own
+s_append(String own this, const char ref str)
 {
-	return s_nappend(s, p, strlen(p));
+	return s_nappend(this, str, strlen(str));
 }
-String ref s_nappend(s, p, n)
-	String ref s;
-	str p;
-	usz n;
+String own
+s_nappend(String own this, const char ref str, usz size)
 {
 	usz grow_by, i;
-	const usz left = (s->end-s->base) - s_len(s);
+	const usz left = (this->end-this->base) - s_len(this);
 
-	grow_by = n+1;
-	if (grow_by < (s->end-s->base)) grow_by = s->end-s->base;
+	grow_by = size+1;
+	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
 
-	if (left < n+1) s = s_grow(s, grow_by);
-	if (s == 0) return s;
+	if (left < size+1) this = s_grow(this, grow_by);
+	if (this == NULL) return NULL;
 
-	for (i = 0; i < n && p[i] != 0; ++i) {
-		*(s->ptr++) = p[i];
+	for (i = 0; i < size && str[i] != 0; ++i) {
+		*(this->ptr++) = str[i];
 	}
-	*s->ptr = 0;
+	*this->ptr = 0;
 
-	return s;
+	return this;
 }
-String ref s_memappend(s, p, n)
-	String ref s;
-	str p;
-	usz n;
+String own
+s_memappend(String own this, const char ref buf, usz size)
 {
 	usz grow_by, i;
-	const usz left = (s->end-s->base) - s_len(s);
+	const usz left = (this->end-this->base) - s_len(this);
 
-	grow_by = n+1;
-	if (grow_by < (s->end-s->base)) grow_by = s->end-s->base;
+	grow_by = size+1;
+	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
 
-	if (left < n+1) s = s_grow(s, grow_by);
-	if (s == 0) return s;
+	if (left < size+1) this = s_grow(this, grow_by);
+	if (this == NULL) return NULL;
 
-	for (i = 0; i < n; ++i) {
-		s->ptr[i] = p[i];
+	for (i = 0; i < size; ++i) {
+		this->ptr[i] = buf[i];
 	}
-	s->ptr += n;
-	*s->ptr = 0;
+	this->ptr += size;
+	*this->ptr = 0;
 
-	return s;
+	return this;
 }
-String ref s_copy(p)
-	str p;
+String own
+s_copy(const char ref str)
 {
-	String ref result;
+	String own result;
 
 	result = s_new();
-	return s_append(result, p);
+	return s_append(result, str);
 }
-String ref s_parse(s1, s2)
-	String ref s1;
-	String ref s2;
+String own
+s_parse(StringView ref from, String own to)
 {
-	char ref start, ref end;
+	const char ref start, ref end;
 	usz toklen;
 
-	start = s1->ptr;
+	start = from->ptr;
 	while (*start != 0 && (*start == ' ' || *start == '\t'
 		|| *start == '\n')) ++start;
 
@@ -209,21 +220,32 @@ String ref s_parse(s1, s2)
 	}
 
 	toklen = end - start;
-	if (toklen == 0) return s2;
+	if (toklen == 0) return to;
 
-	s1->ptr = end;
+	from->ptr = end;
 
-	if (s2->ptr != s2->base) s_putc(s2, ' ');
-	return s_memappend(s2, start, end - start);
+	if (to->ptr != to->base) s_putc(to, ' ');
+	return s_memappend(to, start, end - start);
 }
-void s_tolower(s)
-	String ref s;
+
+void
+s_tolower(String ref this)
 {
 	char ref p;
 	const char lower_bit = 'a' ^ 'A';
 
-	for (p = s->base; p < s->ptr; ++p) {
+	for (p = this->base; p < this->ptr; ++p) {
 		*p |= lower_bit;
+	}
+}
+void
+s_toupper(String ref this)
+{
+	char ref p;
+	const char upper_mask = ~('a' ^ 'A');
+
+	for (p = this->base; p < this->ptr; ++p) {
+		*p &= upper_mask;
 	}
 }
 
@@ -235,10 +257,8 @@ struct StringFile {
 	usz content_len;
 };
 
-isz sf_read(file, buf, cap)
-	StringFile ref file;
-	void arr buf;
-	usz cap;
+isz
+sf_read(StringFile ref file, ptr buf, usz cap)
 {
 	char ref readtill;
 	char ref bufptr;
@@ -247,16 +267,15 @@ isz sf_read(file, buf, cap)
 	readtill = file->s->base + file->content_len;
 	if (readtill - file->s->ptr > cap) readtill = file->s->ptr+cap;
 
-	for (bufptr; file->s->ptr < readtill; ++file->s->ptr, ++bufptr) {
+	/* TODO: use something like memcpy here */
+	for (bufptr = buf; file->s->ptr < readtill; ++file->s->ptr, ++bufptr) {
 		*bufptr = *file->s->ptr;
 	}
 
 	return file->s->ptr - initial;
 }
-isz sf_write(file, buf, cap)
-	StringFile ref file;
-	const void arr buf;
-	usz cap;
+isz
+sf_write(StringFile ref file, const ptr buf, usz cap)
 {
 	file->s = s_memappend(file->s, (char ref)buf, cap);
 	if (file->s == 0) {
@@ -269,9 +288,8 @@ isz sf_write(file, buf, cap)
 
 	return cap;
 }
-isz sf_misc(file, op)
-	StringFile ref file;
-	enum FILE_OP op;
+isz
+sf_misc(StringFile ref file, enum FILE_OP op)
 {
 	isz r;
 	r = 0;
@@ -286,13 +304,13 @@ isz sf_misc(file, op)
 	return r;
 }
 FILE string_file_ptrs = (FILE) {
-	.read = sf_read,
-	.write = sf_write,
-	.run = sf_misc,
+	.read = (FILE_read_t)sf_read,
+	.write = (FILE_write_t)sf_write,
+	.run = (FILE_run_t)sf_misc,
 };
 
-StringFile ref sf_open(s)
-	String ref s;
+StringFile own
+sf_open(String ref string)
 {
 	StringFile ref result;
 
@@ -300,8 +318,8 @@ StringFile ref sf_open(s)
 	if (result == 0) return 0;
 
 	result->ptrs = string_file_ptrs;
-	result->s = s;
-	result->content_len = s->ptr - s->base;
+	result->s = string;
+	result->content_len = string->ptr - string->base;
 
 	return result;
 }
