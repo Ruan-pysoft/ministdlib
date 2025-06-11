@@ -3,6 +3,9 @@
 
 #include "ministd_types.h"
 
+/* Apparently from kernel not stdc, so I'll do this... for now */
+#include <asm/unistd.h>
+
 #define _syscall0(n, out) \
 	__asm__ volatile( \
 		"syscall;" \
@@ -74,7 +77,5 @@
 		  [a4] "g" (arg4), [a5] "g" (arg5), [a6] "g" (arg6) \
 		: "rcx", "r11", "rdi", "rsi", "r10", "r8", "r9" /* clobber */ \
 	)
-
-#define __NR_sbrk 0
 
 #endif /* _RM_STD_SYSCALL_H */

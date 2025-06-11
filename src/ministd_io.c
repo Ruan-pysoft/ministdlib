@@ -3,8 +3,6 @@
 #include "ministd_syscall.h"
 #include "ministd_string.h"
 
-#include <asm/unistd.h>
-
 FILE ref stdin;
 FILE ref stdout;
 FILE ref stderr;
@@ -17,10 +15,10 @@ struct RAW_FILE {
 static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap);
 static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap);
 static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op);
-static FILE raw_file_ptrs = (FILE) {
-	.read = (FILE_read_t)raw_file_read,
-	.write = (FILE_write_t)raw_file_write,
-	.run = (FILE_run_t)raw_file_misc,
+static FILE raw_file_ptrs = {
+	(FILE_read_t)raw_file_read,   /* .read */
+	(FILE_write_t)raw_file_write, /* .write */
+	(FILE_run_t)raw_file_misc,    /* .misc */
 };
 
 static struct RAW_FILE raw_stdin;
@@ -134,33 +132,21 @@ puts(const char ref str)
 int
 putc(char c)
 {
-	fputc(c, stdout);
+	return fputc(c, stdout);
 }
 
 void
 ministd_io_init(void)
 {
-	raw_file_ptrs = (FILE) {
-		.read = (FILE_read_t)raw_file_read,
-		.write = (FILE_write_t)raw_file_write,
-		.run = (FILE_run_t)raw_file_misc,
-	};
-
-	raw_stdin = (struct RAW_FILE) {
-		.ptrs = raw_file_ptrs,
-		.fd = 0,
-	};
+	raw_stdin.ptrs = raw_file_ptrs;
+	raw_stdin.fd = 0;
 	stdin = (FILE ref)&raw_stdin;
 
-	raw_stdout = (struct RAW_FILE) {
-		.ptrs = raw_file_ptrs,
-		.fd = 1,
-	};
+	raw_stdout.ptrs = raw_file_ptrs;
+	raw_stdout.fd = 1;
 	stdout = (FILE ref)&raw_stdout;
 
-	raw_stderr = (struct RAW_FILE) {
-		.ptrs = raw_file_ptrs,
-		.fd = 2,
-	};
+	raw_stderr.ptrs = raw_file_ptrs;
+	raw_stderr.fd = 2;
 	stderr = (FILE ref)&raw_stderr;
 }

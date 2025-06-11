@@ -6,9 +6,10 @@
 #define EOF (-1)
 
 enum FILE_OP {
-	FO_CLOSE,
+	FO_CLOSE
 };
 
+struct FILE;
 typedef isz (*FILE_read_t)(struct FILE ref this, ptr buf, usz cap);
 typedef isz (*FILE_write_t)(struct FILE ref this, const ptr buf, usz cap);
 typedef isz (*FILE_run_t)(struct FILE ref this, enum FILE_OP op);

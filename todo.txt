@@ -1,4 +1,4 @@
-add proper const qualifiers to pointers where applicable
+Add a test suite
 
 More complete memory.h
 	memcpy, memmove, etc
@@ -6,9 +6,6 @@ More complete memory.h
 
 Add dedicated close function to FILE
 	should always be called to free resources when done with file
-
-Actually make memory allocation work
-	Currently calling syscall #0, not actually sbrk...
 
 Move over from sbrk to mmap
 	Maybe also use sbrk for small values?
@@ -18,9 +15,6 @@ implement multithreading
 rethink strings.h
 
 implement buffered io
-
-fix all the warnings the compiler's giving me
-	especially those relating to incorrect c89
 
 ...
 

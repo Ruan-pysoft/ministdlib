@@ -12,6 +12,7 @@ void free(own_ptr buf);
 void memzero(ptr buf, usz bytes);
 void nmemzero(ptr buf, usz size, usz n);
 
+struct Allocator;
 typedef own_ptr (*Allocator_alloc_t)(struct Allocator ref this, usz bytes);
 typedef own_ptr (*Allocator_realloc_t)(struct Allocator ref this, own_ptr buf, usz bytes);
 typedef void (*Allocator_free_t)(struct Allocator ref this, own_ptr buf);
@@ -26,7 +27,5 @@ own_ptr a_nalloc(Allocator ref alloc, usz size, usz n);
 own_ptr a_realloc(Allocator ref alloc, own_ptr buf, usz bytes);
 own_ptr a_nrealloc(Allocator ref alloc, own_ptr buf, usz size, usz n);
 void a_free(Allocator ref alloc, ptr buf);
-
-extern Allocator ref stack_allocator;
 
 #endif /* _RM_STD_MEMORY_H */

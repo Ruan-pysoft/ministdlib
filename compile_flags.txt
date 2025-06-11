@@ -1,0 +1,4 @@
+-nostdlib
+-std=c89
+-pedantic
+-I./src/

@@ -85,7 +85,7 @@ s_frombuf(ptr buf, usz size)
 	if (result == NULL) return NULL;
 
 	result->base = buf;
-	result->end = buf + size;
+	result->end = (char*)buf + size;
 	result->ptr = result->end;
 	*result->ptr = 0;
 
@@ -303,10 +303,10 @@ sf_misc(StringFile ref file, enum FILE_OP op)
 
 	return r;
 }
-FILE string_file_ptrs = (FILE) {
-	.read = (FILE_read_t)sf_read,
-	.write = (FILE_write_t)sf_write,
-	.run = (FILE_run_t)sf_misc,
+FILE string_file_ptrs = {
+	(FILE_read_t)sf_read,   /* read */
+	(FILE_write_t)sf_write, /* write */
+	(FILE_run_t)sf_misc,    /* run */
 };
 
 StringFile own

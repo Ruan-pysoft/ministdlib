@@ -1,6 +1,5 @@
 #include "ministd.h"
 
-#include "ministd_io.h"
 #include "ministd_syscall.h"
 
 #include <asm/unistd.h>

@@ -6,18 +6,21 @@ own_ptr sbrk(isz n);
 own_ptr
 sbrk(isz n)
 {
+	ptr increment_to;
 	own_ptr res;
-	_syscall1(__NR_sbrk, res, n);
-	return res;
+	_syscall1(__NR_brk, increment_to, 0); /* get current program break */
+	increment_to = (char*)increment_to + n;
+	_syscall1(__NR_brk, res, increment_to); /* increment program break */
+	return (char*)res - n; /* want old value, not new value */
 }
 
 own_ptr std_alloc(Allocator ref this, usz bytes);
 own_ptr std_realloc(Allocator ref this, own_ptr buf, usz bytes);
 void std_free(Allocator ref this, own_ptr buf);
-static Allocator std_allocator = (Allocator) {
-	.alloc = (Allocator_alloc_t)std_alloc,
-	.realloc = (Allocator_realloc_t)std_realloc,
-	.free = (Allocator_free_t)std_free,
+static Allocator std_allocator = {
+	(Allocator_alloc_t)std_alloc,     /* alloc */
+	(Allocator_realloc_t)std_realloc, /* realloc */
+	(Allocator_free_t)std_free,       /* free */
 };
 typedef char ALIGN[16];
 typedef union header {
@@ -112,6 +115,7 @@ std_free(Allocator ref this, own_ptr buf)
 					tmp->s.next = 0;
 					tail = tmp;
 				}
+				tmp = tmp->s.next;
 			}
 		}
 		sbrk(0 - sizeof(std_header_t) - header->s.size);
@@ -143,7 +147,7 @@ nrealloc(own_ptr buf, usz size, usz n)
 void
 free(own_ptr buf)
 {
-	return a_free(&std_allocator, buf);
+	a_free(&std_allocator, buf);
 }
 
 void
@@ -163,7 +167,7 @@ nmemzero(own_ptr buf, usz size, usz n)
 	if (!size || !n) return;
 	total_size = size * n;
 	if (total_size / n != size) return;
-	return memzero(buf, total_size);
+	memzero(buf, total_size);
 }
 
 own_ptr
@@ -205,28 +209,5 @@ a_nrealloc(Allocator ref this, own_ptr buf, usz size, usz n)
 void
 a_free(Allocator ref this, own_ptr buf)
 {
-	return this->free(this, buf);
-}
-
-own_ptr stack_alloc(Allocator ref this, usz bytes);
-static Allocator stack_allocator_raw = (Allocator) {
-	.alloc = (Allocator_alloc_t)stack_alloc,
-	.realloc = NULL,
-	.free = NULL,
-};
-Allocator ref stack_allocator = &stack_allocator_raw;
-own_ptr
-stack_alloc(Allocator ref this, usz bytes)
-{
-	own_ptr res;
-
-	__asm__ volatile(
-		"mov %%rsp, %[res];"
-		"sub %[n], %%rsp;"
-		: [res] "=g" (res)
-		: [n] "g" (bytes)
-		: "rsp"
-	);
-
-	return res;
+	this->free(this, buf);
 }
