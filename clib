@@ -3,7 +3,7 @@
 set -e
 set -x
 
-CFLAGS="-gdwarf -Wno-builtin-declaration-mismatch -nostdlib -std=c89 -pedantic"
+CFLAGS="-gdwarf"
 
 mkdir -p build
 

@@ -1,5 +1,3 @@
-Add a test suite
-
 More complete memory.h
 	memcpy, memmove, etc
 	make memzero more efficient
@@ -15,6 +13,8 @@ implement multithreading
 rethink strings.h
 
 implement buffered io
+
+Upgrade the test suite
 
 ...
 

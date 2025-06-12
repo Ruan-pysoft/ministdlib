@@ -1,0 +1,5 @@
+Hello, world!
+Test #1 (strlen): PASSED
+Test #2 (strnlen): PASSED
+Test #3 (strnlen): PASSED
+Test #4 (s_newalloc): PASSED
