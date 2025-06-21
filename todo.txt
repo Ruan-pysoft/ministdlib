@@ -1,29 +1,29 @@
-More complete memory.h
-	memcpy, memmove, etc
+! More complete memory.h
+	! memcpy, memmove, etc
 	make memzero more efficient
 
-Move over from sbrk to mmap
+! Move over from sbrk to mmap
 	Maybe also use sbrk for small values?
 
 implement multithreading
 
 rethink strings.h
 
-implement buffered io
+! implement buffered io
 
 Upgrade the test suite
 
 ...
 
-printf-style suite
+! printf-style suite
 
-scanf-style suite
+! scanf-style suite
 
-high-level input (have puts, putc, etc, but no getc, gets, getline, etc)
+! high-level input (have puts, putc, etc, but no getc, gets, getline, etc)
 
 ANSI escape sequence helpers
 
-proper error handling (enum?)
+! proper error handling (enum?)
 	+ errstr
 
-move argv & envp to gobal (read-only) structure
+! move argv & envp to gobal (read-only) structure
