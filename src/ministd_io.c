@@ -1,5 +1,6 @@
 #include "ministd_io.h"
 
+#include "ministd_memory.h"
 #include "ministd_syscall.h"
 #include "ministd_string.h"
 
@@ -14,11 +15,13 @@ struct RAW_FILE {
 
 static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap);
 static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap);
+static void raw_file_close(struct RAW_FILE ref this);
 static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op);
 static FILE raw_file_ptrs = {
 	(FILE_read_t)raw_file_read,   /* .read */
 	(FILE_write_t)raw_file_write, /* .write */
-	(FILE_run_t)raw_file_misc,    /* .misc */
+	(FILE_close_t)raw_file_close, /* .close */
+	(FILE_run_t)raw_file_misc,    /* .run */
 };
 
 static struct RAW_FILE raw_stdin;
@@ -35,6 +38,11 @@ raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap)
 {
 	return fd_write(this->fd, buf, cap);
 }
+static void
+raw_file_close(struct RAW_FILE ref this)
+{
+	fd_close(this->fd);
+}
 static isz
 raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op)
 {
@@ -42,14 +50,28 @@ raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op)
 	r = 0;
 
 	switch (op) {
-		case FO_CLOSE: {
-			fd_close(this->fd);
+		case FO_FLUSH: {
+			/* do nothing */
 		break; }
 	}
 
 	return r;
 }
 
+int
+fd_open(const char ref path)
+{
+	int res;
+	int flags;
+	int mode;
+
+	flags = 02; /* read/write */
+	mode = 00777; /* permissions of created file (if file created) */
+
+	_syscall3(__NR_open, res, path, flags, mode);
+
+	return res;
+}
 isz
 fd_read(int fd, ptr buf, usz cap)
 {
@@ -79,6 +101,20 @@ fd_close(int fd)
 	_syscall1(__NR_close, res, lfd);
 }
 
+FILE own
+open(const char ref path)
+{
+	return from_fd(fd_open(path));
+}
+FILE own
+from_fd(int fd)
+{
+	struct RAW_FILE own res;
+	res = alloc(sizeof(struct RAW_FILE));
+	res->ptrs = raw_file_ptrs;
+	res->fd = fd;
+	return (FILE own)res;
+}
 isz
 read(FILE ref file, ptr buf, usz cap)
 {
@@ -92,7 +128,7 @@ write(FILE ref file, const ptr buf, usz cap)
 void
 close(FILE ref file)
 {
-	file->run(file, FO_CLOSE);
+	file->close(file);
 }
 
 int

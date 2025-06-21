@@ -2,9 +2,6 @@ More complete memory.h
 	memcpy, memmove, etc
 	make memzero more efficient
 
-Add dedicated close function to FILE
-	should always be called to free resources when done with file
-
 Move over from sbrk to mmap
 	Maybe also use sbrk for small values?
 

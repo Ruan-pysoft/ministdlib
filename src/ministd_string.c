@@ -288,6 +288,12 @@ sf_write(StringFile ref file, const ptr buf, usz cap)
 
 	return cap;
 }
+void
+sf_close(StringFile ref file)
+{
+	file->s = 0;
+	file->content_len = 0;
+}
 isz
 sf_misc(StringFile ref file, enum FILE_OP op)
 {
@@ -295,9 +301,7 @@ sf_misc(StringFile ref file, enum FILE_OP op)
 	r = 0;
 
 	switch (op) {
-		case FO_CLOSE: {
-			file->s = 0;
-			file->content_len = 0;
+		case FO_FLUSH: {
 		break; }
 	}
 
@@ -306,6 +310,7 @@ sf_misc(StringFile ref file, enum FILE_OP op)
 FILE string_file_ptrs = {
 	(FILE_read_t)sf_read,   /* read */
 	(FILE_write_t)sf_write, /* write */
+	(FILE_close_t)sf_close, /* close */
 	(FILE_run_t)sf_misc,    /* run */
 };
 
