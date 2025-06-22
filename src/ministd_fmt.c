@@ -17,7 +17,7 @@ isz
 fprintl(long l, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^63-1 ~= 10^18 * 8, so no more than 20 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[21];
 	isz len = 0;
 
@@ -41,6 +41,7 @@ fprintl(long l, FILE ref file, err_t ref err_out)
 		l /= 10;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+20-len, file, err_out);
 }
@@ -48,7 +49,7 @@ isz
 fprintul(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1 ~= 10^18 * 16, so no more than 21 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[22];
 	isz len = 0;
 
@@ -61,6 +62,7 @@ fprintul(unsigned long ul, FILE ref file, err_t ref err_out)
 		ul /= 10;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+21-len, file, err_out);
 }
@@ -68,7 +70,7 @@ isz
 fprintlb(long l, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^63-1 so at most 63 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[64];
 	isz len = 0;
 
@@ -92,6 +94,7 @@ fprintlb(long l, FILE ref file, err_t ref err_out)
 		l >>= 1;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+63-len, file, err_out);
 }
@@ -99,7 +102,7 @@ isz
 fprintulb(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1  so at most 64 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[65];
 	isz len = 0;
 
@@ -112,6 +115,7 @@ fprintulb(unsigned long ul, FILE ref file, err_t ref err_out)
 		ul >>= 1;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+64-len, file, err_out);
 }
@@ -119,7 +123,7 @@ isz
 fprintlx(long l, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^63-1 so at most 16 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[17];
 	isz len = 0;
 
@@ -145,6 +149,7 @@ fprintlx(long l, FILE ref file, err_t ref err_out)
 		l >>= 4;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+16-len, file, err_out);
 }
@@ -152,7 +157,7 @@ isz
 fprintulx(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1  so at most 16 digits */
-	err_t err;
+	err_t err = ERR_OK;
 	char buf[17];
 	isz len = 0;
 
@@ -167,6 +172,7 @@ fprintulx(unsigned long ul, FILE ref file, err_t ref err_out)
 		ul >>= 4;
 		++len;
 	}
+	--len;
 
 	return fputs(buf+16-len, file, err_out);
 }
