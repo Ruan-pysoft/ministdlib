@@ -2,18 +2,17 @@
 #define _RM_STD_IO_H
 
 #include "ministd_types.h"
-
-#define EOF (-1)
+#include "ministd_error.h"
 
 enum FILE_OP {
 	FO_FLUSH
 };
 
 struct FILE;
-typedef isz (*FILE_read_t)(struct FILE ref this, ptr buf, usz cap);
-typedef isz (*FILE_write_t)(struct FILE ref this, const ptr buf, usz cap);
-typedef void (*FILE_close_t)(struct FILE ref this);
-typedef isz (*FILE_run_t)(struct FILE ref this, enum FILE_OP op);
+typedef isz (*FILE_read_t)(struct FILE ref this, ptr buf, usz cap, err_t ref err_out);
+typedef isz (*FILE_write_t)(struct FILE ref this, const ptr buf, usz cap, err_t ref err_out);
+typedef void (*FILE_close_t)(struct FILE ref this, err_t ref err_out);
+typedef isz (*FILE_run_t)(struct FILE ref this, enum FILE_OP op, err_t ref err_out);
 typedef struct FILE {
 	FILE_read_t read;
 	FILE_write_t write;
@@ -25,20 +24,20 @@ extern FILE ref stdin;
 extern FILE ref stdout;
 extern FILE ref stderr;
 
-int fd_open(const char ref path); /* TODO: flags */
-isz fd_read(int fd, ptr buf, usz cap);
-isz fd_write(int fd, const ptr buf, usz cap);
-void fd_close(int fd);
+int fd_open(const char ref path, err_t ref err_out); /* TODO: flags */
+isz fd_read(int fd, ptr buf, usz cap, err_t ref err_out);
+isz fd_write(int fd, const ptr buf, usz cap, err_t ref err_out);
+void fd_close(int fd, err_t ref err_out);
 
-FILE own open(const char ref path);
-FILE own from_fd(int fd);
-isz read(FILE ref file, ptr buf, usz cap);
-isz write(FILE ref file, const ptr buf, usz cap);
-void close(FILE ref file);
+FILE own open(const char ref path, err_t ref err_out);
+FILE own from_fd(int fd, err_t ref err_out);
+isz read(FILE ref file, ptr buf, usz cap, err_t ref err_out);
+isz write(FILE ref file, const ptr buf, usz cap, err_t ref err_out);
+void close(FILE ref file, err_t ref err_out);
 
-int fputs(const char ref str, FILE ref file);
-int fputc(char c, FILE ref file);
-int puts(const char ref str);
-int putc(char c);
+isz fputs(const char ref str, FILE ref file, err_t ref err_out);
+int fputc(char c, FILE ref file, err_t ref err_out);
+isz puts(const char ref str, err_t ref err_out);
+int putc(char c, err_t ref err_out);
 
 #endif /* _RM_STD_IO_H */

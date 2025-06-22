@@ -1,21 +1,34 @@
 #include "ministd_memory.h"
 
+#include "ministd_error.h"
 #include "ministd_syscall.h"
 
-own_ptr sbrk(isz n);
+own_ptr sbrk(isz n, err_t ref err_out);
 own_ptr
-sbrk(isz n)
+sbrk(isz n, err_t ref err_out)
 {
 	ptr increment_to;
 	own_ptr res;
+
 	_syscall1(__NR_brk, increment_to, 0); /* get current program break */
+
 	increment_to = (char*)increment_to + n;
+
 	_syscall1(__NR_brk, res, increment_to); /* increment program break */
+
+	if (res == (ptr)-1) {
+		/* NOTE: this is my best guess as to what the syscall does
+		 * based off of the libc manpages,
+		 * but I'm unsure;
+		 * TODO: verify */
+		ERR_WITH(ERR_NOMEM, NULL);
+	}
+
 	return (char*)res - n; /* want old value, not new value */
 }
 
-own_ptr std_alloc(Allocator ref this, usz bytes);
-own_ptr std_realloc(Allocator ref this, own_ptr buf, usz bytes);
+own_ptr std_alloc(Allocator ref this, usz bytes, err_t ref err_out);
+own_ptr std_realloc(Allocator ref this, own_ptr buf, usz bytes, err_t ref err_out);
 void std_free(Allocator ref this, own_ptr buf);
 static Allocator std_allocator = {
 	(Allocator_alloc_t)std_alloc,     /* alloc */
@@ -35,8 +48,9 @@ std_header_t ref head, ref tail;
 
 std_header_t ref std_get_free_block(usz bytes);
 own_ptr
-std_alloc(Allocator ref this, usz bytes)
+std_alloc(Allocator ref this, usz bytes, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	usz total_size;
 	own_ptr block;
 	std_header_t ref header;
@@ -50,7 +64,8 @@ std_alloc(Allocator ref this, usz bytes)
 	}
 
 	total_size = sizeof(std_header_t) + bytes;
-	block = sbrk(total_size);
+	block = sbrk(total_size, &err);
+	TRY_WITH(err, NULL);
 	if (block == (ptr) -1) {
 		return 0;
 	}
@@ -77,14 +92,17 @@ std_get_free_block(usz bytes)
 	return res;
 }
 own_ptr
-std_realloc(Allocator ref this, own_ptr buf, usz bytes)
+std_realloc(Allocator ref this, own_ptr buf, usz bytes, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	std_header_t ref header;
 	own_ptr ret;
-	if (!buf || !bytes) return std_alloc(this, bytes);
+
+	if (!buf || !bytes) return std_alloc(this, bytes, err_out);
 	header = (std_header_t*)buf - 1;
 	if (header->s.size >= bytes) return buf;
-	ret = std_alloc(this, bytes);
+	ret = std_alloc(this, bytes, &err);
+	TRY_WITH(err, ret);
 	if (ret) {
 		usz i;
 
@@ -93,6 +111,7 @@ std_realloc(Allocator ref this, own_ptr buf, usz bytes)
 		}
 	}
 	std_free(this, buf);
+
 	return ret;
 }
 void
@@ -104,7 +123,11 @@ std_free(Allocator ref this, own_ptr buf)
 	if (!buf) return;
 	header = ((std_header_t*)buf) - 1;
 
-	programbreak = sbrk(0);
+	programbreak = sbrk(0, NULL);
+	if (programbreak == NULL) {
+		perror(ERR_NOMEM, "Something went wrong when calling free");
+		return;
+	}
 	if ((char*)buf + header->s.size == programbreak) {
 		if (head == tail) {
 			head = tail = 0;
@@ -118,31 +141,34 @@ std_free(Allocator ref this, own_ptr buf)
 				tmp = tmp->s.next;
 			}
 		}
-		sbrk(0 - sizeof(std_header_t) - header->s.size);
+		if (sbrk(0 - sizeof(std_header_t) - header->s.size, NULL) == NULL) {
+			perror(ERR_NOMEM, "Something went wrong when calling free");
+			return;
+		}
 		return;
 	}
 	header->s.is_free = 1;
 }
 
 own_ptr
-alloc(usz bytes)
+alloc(usz bytes, err_t ref err_out)
 {
-	return a_alloc(&std_allocator, bytes);
+	return a_alloc(&std_allocator, bytes, err_out);
 }
 own_ptr
-nalloc(usz size, usz n)
+nalloc(usz size, usz n, err_t ref err_out)
 {
-	return a_nalloc(&std_allocator, size, n);
+	return a_nalloc(&std_allocator, size, n, err_out);
 }
 own_ptr
-realloc(own_ptr buf, usz bytes)
+realloc(own_ptr buf, usz bytes, err_t ref err_out)
 {
-	return a_realloc(&std_allocator, buf, bytes);
+	return a_realloc(&std_allocator, buf, bytes, err_out);
 }
 own_ptr
-nrealloc(own_ptr buf, usz size, usz n)
+nrealloc(own_ptr buf, usz size, usz n, err_t ref err_out)
 {
-	return a_nrealloc(&std_allocator, buf, size, n);
+	return a_nrealloc(&std_allocator, buf, size, n, err_out);
 }
 void
 free(own_ptr buf)
@@ -171,40 +197,42 @@ nmemzero(own_ptr buf, usz size, usz n)
 }
 
 own_ptr
-a_alloc(Allocator ref this, usz bytes)
+a_alloc(Allocator ref this, usz bytes, err_t ref err_out)
 {
-	return this->alloc(this, bytes);
+	return this->alloc(this, bytes, err_out);
 }
 own_ptr
-a_nalloc(Allocator ref this, usz size, usz n)
+a_nalloc(Allocator ref this, usz size, usz n, err_t ref err_out)
 {
 	usz total_size;
 
-	if (!size || !n) return 0;
+	if (!size || !n) return NULL;
 	total_size = size * n;
-	if (total_size / n != size) return 0;
-	return a_alloc(this, total_size);
+	if (total_size / n != size) {
+		ERR_WITH(ERR_OVERFLOW, NULL);
+	}
+	return a_alloc(this, total_size, err_out);
 }
 own_ptr
-a_realloc(Allocator ref this, own_ptr buf, usz bytes)
+a_realloc(Allocator ref this, own_ptr buf, usz bytes, err_t ref err_out)
 {
-	return this->realloc(this, buf, bytes);
+	return this->realloc(this, buf, bytes, err_out);
 }
 own_ptr
-a_nrealloc(Allocator ref this, own_ptr buf, usz size, usz n)
+a_nrealloc(Allocator ref this, own_ptr buf, usz size, usz n, err_t ref err_out)
 {
 	usz total_size;
 
 	if (!size || !n) {
 		free(buf);
-		return 0;
+		return NULL;
 	}
 	total_size = size * n;
 	if (total_size / n != size) {
 		free(buf);
-		return 0;
+		ERR_WITH(ERR_OVERFLOW, NULL);
 	}
-	return a_realloc(this, buf, total_size);
+	return a_realloc(this, buf, total_size, err_out);
 }
 void
 a_free(Allocator ref this, own_ptr buf)

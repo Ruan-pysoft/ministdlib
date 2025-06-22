@@ -23,7 +23,4 @@ Upgrade the test suite
 
 ANSI escape sequence helpers
 
-! proper error handling (enum?)
-	+ errstr
-
 ! move argv & envp to gobal (read-only) structure

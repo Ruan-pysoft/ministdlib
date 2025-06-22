@@ -2,6 +2,7 @@
 #define _RM_STD_STRING_H
 
 #include "ministd_types.h"
+#include "ministd_error.h"
 
 usz strlen(const char ref cstr);
 usz strnlen(const char ref cstr, usz maxlen);
@@ -36,33 +37,33 @@ typedef struct String {
 #define sv_len(sv) s_len(sv)
 #define sv_clone(sv) s_clone(sv)
 
-String own s_new(void);
+String own s_new(err_t ref err_out);
 void s_free(String own this);
-String own s_newalloc(usz size);
-StringView own sv_new(const char ref cstr, usz cstr_cap);
-String own s_frombuf(ptr buf, usz size);
+String own s_newalloc(usz size, err_t ref err_out);
+StringView own sv_new(const char ref cstr, usz cstr_cap, err_t ref err_out);
+String own s_frombuf(ptr buf, usz size, err_t ref err_out);
 /* WARNING: frees string if called on non-owned buffer */
-String own s_grow(String own this, usz growby);
+String own s_grow(String own this, usz growby, err_t ref err_out);
 
 /* TODO: change all the functions that take & return String own
- * to functions that take String ref and returns error enum
+ * to functions that just take String ref
  */
 
-void s_putc(String ref this, char c);
+void s_putc(String ref this, char c, err_t ref err_out);
 void s_terminate(String ref this);
 String own s_reset(String own this);
 StringView own s_restart(StringView own this);
-String own s_append(String own this, const char ref str);
-String own s_nappend(String own this, const char ref str, usz size);
-String own s_memappend(String own this, const char ref buf, usz size);
-String own s_copy(const char ref str);
-String own s_parse(StringView ref from, String own to);
+String own s_append(String own this, const char ref str, err_t ref err_out);
+String own s_nappend(String own this, const char ref str, usz size, err_t ref err_out);
+String own s_memappend(String own this, const char ref buf, usz size, err_t ref err_out);
+String own s_copy(const char ref str, err_t ref err_out);
+String own s_parse(StringView ref from, String own to, err_t ref err_out);
 
 void s_tolower(String ref this);
 void s_toupper(String ref this);
 
 typedef struct StringFile StringFile;
 
-StringFile own sf_open(String ref string);
+StringFile own sf_open(String ref string, err_t ref err_out);
 
 #endif /* _RM_STD_STRING_H */

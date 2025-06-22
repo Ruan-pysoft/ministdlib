@@ -1,5 +1,6 @@
 #include "ministd_string.h"
 
+#include "ministd_error.h"
 #include "ministd_memory.h"
 
 usz
@@ -22,9 +23,9 @@ strnlen(const char ref cstr, usz maxlen)
 }
 
 String own
-s_new(void)
+s_new(err_t ref err_out)
 {
-	return s_newalloc(128);
+	return s_newalloc(128, err_out);
 }
 void
 s_free(String own this)
@@ -33,16 +34,22 @@ s_free(String own this)
 	free(this);
 }
 String own
-s_newalloc(usz n)
+s_newalloc(usz n, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	String own result;
 
 	if (n == 0) return NULL;
 
-	result = alloc(sizeof(String));
+	result = alloc(sizeof(String), &err);
+	TRY_WITH(err, NULL);
 	if (result == NULL) return NULL;
 
-	result->base = alloc(n);
+	result->base = alloc(n, &err);
+	if (err) {
+		free(result);
+		ERR_WITH(err, NULL);
+	}
 	if (result->base == NULL) {
 		free(result);
 		return NULL;
@@ -57,15 +64,17 @@ s_newalloc(usz n)
 	return result;
 }
 StringView own
-sv_new(const char ref cstr, usz cstr_cap)
+sv_new(const char ref cstr, usz cstr_cap, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	StringView own result;
 	usz len;
 
 	len = strnlen(cstr, cstr_cap);
 	if (len == cstr_cap) return NULL;
 
-	result = alloc(sizeof(StringView));
+	result = alloc(sizeof(StringView), &err);
+	TRY_WITH(err, NULL);
 	if (result == NULL) return NULL;
 
 	result->base = cstr;
@@ -75,13 +84,15 @@ sv_new(const char ref cstr, usz cstr_cap)
 	return result;
 }
 String own
-s_frombuf(ptr buf, usz size)
+s_frombuf(ptr buf, usz size, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	String own result;
 
 	if (size == 0) return NULL;
 
-	result = alloc(sizeof(String));
+	result = alloc(sizeof(String), &err);
+	TRY_WITH(err, NULL);
 	if (result == NULL) return NULL;
 
 	result->base = buf;
@@ -94,17 +105,25 @@ s_frombuf(ptr buf, usz size)
 	return result;
 }
 String own
-s_grow(String own this, usz growby)
+s_grow(String own this, usz growby, err_t ref err_out)
 {
-	const usz cap = this->end - this->base;
-	const usz len = s_len(this);
+	const usz cap = this == NULL ? 0 : this->end - this->base;
+	const usz len = this == NULL ? 0 : s_len(this);
+
+	err_t err = ERR_OK;
+
+	if (this == NULL) return NULL;
 
 	if (!this->owned_buffer) {
 		s_free(this);
 		return NULL;
 	}
 
-	this->base = realloc(this->base, cap+growby);
+	this->base = realloc(this->base, cap+growby, &err);
+	if (err) {
+		s_free(this);
+		ERR_WITH(err, NULL);
+	}
 	if (this->base == NULL) {
 		s_free(this);
 		return NULL;
@@ -117,47 +136,55 @@ s_grow(String own this, usz growby)
 }
 
 void
-s_putc(String ref this, char c)
+s_putc(String ref this, char c, err_t ref err_out)
 {
+	if (this == NULL) return;
+
 	*(this->ptr++) = c;
-	if (this->ptr == this->end) this = s_grow(this, s_len(this));
+	if (this->ptr == this->end) this = s_grow(this, s_len(this), err_out);
 	if (this != NULL) *this->ptr = 0;
 }
 void
 s_terminate(String ref this)
 {
-	*this->ptr = 0;
+	if (this != NULL && this->ptr != NULL) *this->ptr = 0;
 }
 String own
 s_reset(String own this)
 {
+	if (this == NULL) return NULL;
+
 	this->ptr = this->base;
-	*this->ptr = 0;
+	if (this->ptr != NULL) *this->ptr = 0;
 
 	return this;
 }
 StringView own
 s_restart(StringView own this)
 {
+	if (this == NULL) return NULL;
+
 	this->ptr = this->base;
 
 	return this;
 }
 String own
-s_append(String own this, const char ref str)
+s_append(String own this, const char ref str, err_t ref err_out)
 {
-	return s_nappend(this, str, strlen(str));
+	return s_nappend(this, str, strlen(str), err_out);
 }
 String own
-s_nappend(String own this, const char ref str, usz size)
+s_nappend(String own this, const char ref str, usz size, err_t ref err_out)
 {
 	usz grow_by, i;
-	const usz left = (this->end-this->base) - s_len(this);
+	const usz left = this == NULL ? 0 : (this->end-this->base) - s_len(this);
+
+	if (this == NULL) return NULL;
 
 	grow_by = size+1;
 	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
 
-	if (left < size+1) this = s_grow(this, grow_by);
+	if (left < size+1) this = s_grow(this, grow_by, err_out);
 	if (this == NULL) return NULL;
 
 	for (i = 0; i < size && str[i] != 0; ++i) {
@@ -168,7 +195,7 @@ s_nappend(String own this, const char ref str, usz size)
 	return this;
 }
 String own
-s_memappend(String own this, const char ref buf, usz size)
+s_memappend(String own this, const char ref buf, usz size, err_t ref err_out)
 {
 	usz grow_by, i;
 	const usz left = (this->end-this->base) - s_len(this);
@@ -176,7 +203,7 @@ s_memappend(String own this, const char ref buf, usz size)
 	grow_by = size+1;
 	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
 
-	if (left < size+1) this = s_grow(this, grow_by);
+	if (left < size+1) this = s_grow(this, grow_by, err_out);
 	if (this == NULL) return NULL;
 
 	for (i = 0; i < size; ++i) {
@@ -188,17 +215,20 @@ s_memappend(String own this, const char ref buf, usz size)
 	return this;
 }
 String own
-s_copy(const char ref str)
+s_copy(const char ref str, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	String own result;
 
-	result = s_new();
-	return s_append(result, str);
+	result = s_new(&err);
+	TRY_WITH(err, NULL);
+	return s_append(result, str, err_out);
 }
 String own
-s_parse(StringView ref from, String own to)
+s_parse(StringView ref from, String own to, err_t ref err_out)
 {
 	const char ref start, ref end;
+	err_t err = ERR_OK;
 	usz toklen;
 
 	start = from->ptr;
@@ -224,8 +254,9 @@ s_parse(StringView ref from, String own to)
 
 	from->ptr = end;
 
-	if (to->ptr != to->base) s_putc(to, ' ');
-	return s_memappend(to, start, end - start);
+	if (to->ptr != to->base) s_putc(to, ' ', &err);
+	TRY_WITH(err, NULL);
+	return s_memappend(to, start, end - start, err_out);
 }
 
 void
@@ -258,7 +289,7 @@ struct StringFile {
 };
 
 isz
-sf_read(StringFile ref file, ptr buf, usz cap)
+sf_read(StringFile ref file, ptr buf, usz cap, err_t ref err_out)
 {
 	char ref readtill;
 	char ref bufptr;
@@ -275,9 +306,12 @@ sf_read(StringFile ref file, ptr buf, usz cap)
 	return file->s->ptr - initial;
 }
 isz
-sf_write(StringFile ref file, const ptr buf, usz cap)
+sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
-	file->s = s_memappend(file->s, (char ref)buf, cap);
+	err_t err = ERR_OK;
+
+	file->s = s_memappend(file->s, (char ref)buf, cap, &err);
+	TRY_WITH(err, -1);
 	if (file->s == 0) {
 		file->content_len = 0;
 		return -1;
@@ -295,7 +329,7 @@ sf_close(StringFile ref file)
 	file->content_len = 0;
 }
 isz
-sf_misc(StringFile ref file, enum FILE_OP op)
+sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
 {
 	isz r;
 	r = 0;
@@ -315,12 +349,14 @@ FILE string_file_ptrs = {
 };
 
 StringFile own
-sf_open(String ref string)
+sf_open(String ref string, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	StringFile ref result;
 
-	result = alloc(sizeof(StringFile));
-	if (result == 0) return 0;
+	result = alloc(sizeof(StringFile), &err);
+	TRY_WITH(err, NULL);
+	if (result == NULL) return NULL;
 
 	result->ptrs = string_file_ptrs;
 	result->s = string;

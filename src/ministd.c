@@ -41,3 +41,14 @@ _start(void)
 	exit(main(argc, argv));
 	__builtin_unreachable();
 }
+
+#include "ministd_io.h"
+
+void
+__stack_chk_fail(void)
+{
+	const char msg[] = "Stack smashing detected!";
+
+	fd_write(2 /* stderr */, (ptr)msg, sizeof(msg)/sizeof(*msg), NULL);
+	exit(127);
+}

@@ -1,5 +1,5 @@
-#define MINI_LIB_IMPL
-#include "minilib.h"
+#include "ministd.h"
+#include "ministd_types.h"
 
 int fib(n)
 {
@@ -17,15 +17,15 @@ int fib(n)
 }
 
 int main(argc, argv)
-	str arr argv;
+	const char ref ref argv;
 {
 	int i;
 
-	puts("Hello, world!");
+	puts("Hello, world!", NULL);
 	for (i = 0; i < argc; ++i) {
-		fputs(argv[i], stdout);
-		if (i < argc-1) putc(' ');
-		else putc('\n');
+		fputs(argv[i], stdout, NULL);
+		if (i < argc-1) putc(' ', NULL);
+		else putc('\n', NULL);
 	}
 
 	return 42;

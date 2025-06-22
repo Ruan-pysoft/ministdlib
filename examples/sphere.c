@@ -1,4 +1,7 @@
-#include "minilib.h"
+#include "ministd.h"
+#include "ministd_types.h"
+
+/* TODO: get this working */
 
 #define SLEN 81
 

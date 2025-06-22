@@ -13,10 +13,10 @@ struct RAW_FILE {
 	int fd;
 };
 
-static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap);
-static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap);
-static void raw_file_close(struct RAW_FILE ref this);
-static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op);
+static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out);
+static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out);
+static void raw_file_close(struct RAW_FILE ref this, err_t ref err_out);
+static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out);
 static FILE raw_file_ptrs = {
 	(FILE_read_t)raw_file_read,   /* .read */
 	(FILE_write_t)raw_file_write, /* .write */
@@ -29,22 +29,22 @@ static struct RAW_FILE raw_stdout;
 static struct RAW_FILE raw_stderr;
 
 static isz
-raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap)
+raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 {
-	return fd_read(this->fd, buf, cap);
+	return fd_read(this->fd, buf, cap, err_out);
 }
 static isz
-raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap)
+raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out)
 {
-	return fd_write(this->fd, buf, cap);
+	return fd_write(this->fd, buf, cap, err_out);
 }
 static void
-raw_file_close(struct RAW_FILE ref this)
+raw_file_close(struct RAW_FILE ref this, err_t ref err_out)
 {
-	fd_close(this->fd);
+	fd_close(this->fd, err_out);
 }
 static isz
-raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op)
+raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
 {
 	isz r;
 	r = 0;
@@ -59,7 +59,7 @@ raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op)
 }
 
 int
-fd_open(const char ref path)
+fd_open(const char ref path, err_t ref err_out)
 {
 	int res;
 	int flags;
@@ -70,105 +70,132 @@ fd_open(const char ref path)
 
 	_syscall3(__NR_open, res, path, flags, mode);
 
+	if (res < 0) {
+		ERR_WITH(-res, -1);
+	}
+
 	return res;
 }
 isz
-fd_read(int fd, ptr buf, usz cap)
+fd_read(int fd, ptr buf, usz cap, err_t ref err_out)
 {
 	isz lfd, res;
 	lfd = fd;
 
 	_syscall3(__NR_read, res, lfd, buf, cap);
 
+	if (res < 0) {
+		ERR_WITH(-res, -1);
+	}
+
 	return res;
 }
 isz
-fd_write(int fd, const ptr buf, usz cap)
+fd_write(int fd, const ptr buf, usz cap, err_t ref err_out)
 {
 	isz lfd, res;
 	lfd = fd;
 
 	_syscall3(__NR_write, res, lfd, buf, cap);
 
+	if (res < 0) {
+		ERR_WITH(-res, -1);
+	}
+
 	return res;
 }
 void
-fd_close(int fd)
+fd_close(int fd, err_t ref err_out)
 {
 	isz lfd, res;
 	lfd = fd;
 
 	_syscall1(__NR_close, res, lfd);
+
+	SET_ERR(-res);
 }
 
 FILE own
-open(const char ref path)
+open(const char ref path, err_t ref err_out)
 {
-	return from_fd(fd_open(path));
+	err_t err = ERR_OK;
+	int fd;
+
+	fd = fd_open(path, &err);
+	TRY_WITH(err, NULL);
+
+	return from_fd(fd, err_out);
 }
 FILE own
-from_fd(int fd)
+from_fd(int fd, err_t ref err_out)
 {
+	err_t err = ERR_OK;
 	struct RAW_FILE own res;
-	res = alloc(sizeof(struct RAW_FILE));
+
+	res = alloc(sizeof(struct RAW_FILE), &err);
+	TRY_WITH(err, NULL);
 	res->ptrs = raw_file_ptrs;
 	res->fd = fd;
+
 	return (FILE own)res;
 }
 isz
-read(FILE ref file, ptr buf, usz cap)
+read(FILE ref file, ptr buf, usz cap, err_t ref err_out)
 {
-	return file->read(file, buf, cap);
+	return file->read(file, buf, cap, err_out);
 }
 isz
-write(FILE ref file, const ptr buf, usz cap)
+write(FILE ref file, const ptr buf, usz cap, err_t ref err_out)
 {
-	return file->write(file, buf, cap);
+	return file->write(file, buf, cap, err_out);
 }
 void
-close(FILE ref file)
+close(FILE ref file, err_t ref err_out)
 {
-	file->close(file);
+	file->close(file, err_out);
 }
 
-int
-fputs(const char ref str, FILE ref file)
+isz
+fputs(const char ref str, FILE ref file, err_t ref err_out)
 {
-	isz bytes_written;
 	const usz len = strlen(str);
 
-	bytes_written = write(file, (ptr)str, len);
-	if (bytes_written != len) {
-		return EOF;
-	} else {
-		return bytes_written;
-	}
+	return write(file, (ptr)str, len, err_out);
 }
 int
-fputc(char c, FILE ref file)
+fputc(char c, FILE ref file, err_t ref err_out)
 {
-	if (write(file, &c, 1) == 1) {
-		return c;
-	} else {
-		return EOF;
-	}
-}
-int
-puts(const char ref str)
-{
-	int bytes_written;
+	isz bytes_written;
 
-	bytes_written = fputs(str, stdout);
-	if (bytes_written >= 0 && fputc(10, stdout) == 10) {
-		return bytes_written+1;
+	bytes_written = write(file, &c, 1, err_out);
+	if (bytes_written == 1) {
+		return c;
+	} else if (bytes_written >= 0) {
+		ERR_WITH(ERR_IO, -1);
 	} else {
-		return EOF;
+		return -1;
+	}
+}
+isz
+puts(const char ref str, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	isz bytes_written;
+
+	bytes_written = fputs(str, stdout, &err);
+	TRY_WITH(err, -1);
+	if (bytes_written >= 0 && fputc(10, stdout, err_out) == 10) {
+		return bytes_written+1;
+	} else if (bytes_written >= 0) {
+		ERR_WITH(ERR_IO, -1);
+	} else {
+		return -1;
 	}
 }
 int
-putc(char c)
+putc(char c, err_t ref err_out)
 {
-	return fputc(c, stdout);
+	return fputc(c, stdout, err_out);
 }
 
 void

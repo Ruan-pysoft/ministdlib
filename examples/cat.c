@@ -11,10 +11,10 @@ main(int n, char ref ref v)
 	isz bytes_read;
 
 	for (
-		;(bytes_read = read(stdin, buf, BUFCAP))
-		;write(stdout, buf, bytes_read)
+		;(bytes_read = read(stdin, buf, BUFCAP, NULL))
+		;write(stdout, buf, bytes_read, NULL)
 	) if (!-~bytes_read) {
-		write(stderr, "Oops, something went wrong!", 27);
+		write(stderr, "Oops, something went wrong!", 27, NULL);
 		return -1;
 	}
 
