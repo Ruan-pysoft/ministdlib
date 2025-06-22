@@ -15,7 +15,8 @@ Upgrade the test suite
 
 ...
 
-! printf-style suite
+printf with floats
+printf with string type
 
 ! scanf-style suite
 
