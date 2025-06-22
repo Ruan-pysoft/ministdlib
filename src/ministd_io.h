@@ -40,4 +40,11 @@ int fputc(char c, FILE ref file, err_t ref err_out);
 isz puts(const char ref str, err_t ref err_out);
 int putc(char c, err_t ref err_out);
 
+bool fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out);
+char fgetc(FILE ref file, err_t ref err_out);
+bool fgetline(char ref buf, usz cap, FILE ref file, err_t ref err_out);
+bool gets(char ref buf, usz cap, err_t ref err_out);
+char getc(err_t ref err_out);
+bool getline(char ref buf, usz cap, err_t ref err_out);
+
 #endif /* _RM_STD_IO_H */

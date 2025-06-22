@@ -198,6 +198,113 @@ putc(char c, err_t ref err_out)
 	return fputc(c, stdout, err_out);
 }
 
+bool
+fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	isz len = 0;
+	isz bytes_read;
+	bool whole_word = false;
+
+	if (buf == NULL || cap == 0) return 0;
+	if (cap == 1) {
+		*buf = 0;
+		return false;
+	}
+
+	*buf = ' ';
+	while (*buf <= ' ') {
+		bytes_read = read(file, buf, 1, &err);
+		if (err) {
+			*buf = 0;
+			ERR_WITH(err, false);
+		}
+		if (bytes_read == 0) {
+			*buf = 0;
+			return false;
+		}
+	}
+
+	len = 1;
+	while (len < cap-1) {
+		buf[len+1] = 0;
+		bytes_read = read(file, buf+len, 1, &err);
+		if (err) {
+			buf[len] = 0;
+			ERR_WITH(err, false);
+		}
+		if (bytes_read == 0) {
+			buf[len] = 0;
+			return true;
+		}
+		++len;
+		if (buf[len-1] <= ' ') break;
+	}
+	if (buf[len] <= ' ') {
+		buf[len] = 0;
+		return true;
+	} else {
+		return false;
+	}
+}
+char
+fgetc(FILE ref file, err_t ref err_out)
+{
+	char res;
+	if (read(file, &res, 1, err_out) != 0) {
+		res = 0;
+		if (err_out != NULL && *err_out == ERR_OK) {
+			*err_out = ERR_IO;
+		}
+	}
+	return res;
+}
+bool
+fgetline(char ref buf, usz cap, FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	isz len = 0;
+	isz bytes_read;
+
+	if (buf == NULL || cap == 0) return 0;
+	if (cap == 1) {
+		*buf = 0;
+		return false;
+	}
+
+	*buf = 0;
+	while (len < cap-1) {
+		buf[len+1] = 0;
+		bytes_read = read(file, buf+len, 1, &err);
+		if (err) {
+			buf[len] = 0;
+			ERR_WITH(err, false);
+		}
+		if (bytes_read == 0) {
+			buf[len] = 0;
+			return true;
+		}
+		++len;
+		if (buf[len-1] == '\n') break;
+	}
+	return len && buf[len-1] == '\n';
+}
+bool
+gets(char ref buf, usz cap, err_t ref err_out)
+{
+	return fgets(buf, cap, stdin, err_out);
+}
+char
+getc(err_t ref err_out)
+{
+	return fgetc(stdin, err_out);
+}
+bool
+getline(char ref buf, usz cap, err_t ref err_out)
+{
+	return fgetline(buf, cap, stdin, err_out);
+}
+
 void
 ministd_io_init(void)
 {

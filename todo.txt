@@ -19,6 +19,4 @@ Upgrade the test suite
 
 ! scanf-style suite
 
-! high-level input (have puts, putc, etc, but no getc, gets, getline, etc)
-
 ANSI escape sequence helpers
