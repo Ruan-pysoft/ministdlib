@@ -1,7 +1,8 @@
 #include "ministd.h"
 #include "ministd_types.h"
 
-int fib(n)
+int
+fib(int n)
 {
 	int a, b, tmp, i;
 	a = 0;
@@ -16,15 +17,15 @@ int fib(n)
 	return a;
 }
 
-int main(argc, argv)
-	const char ref ref argv;
+int
+main(void)
 {
 	int i;
 
 	puts("Hello, world!", NULL);
-	for (i = 0; i < argc; ++i) {
-		fputs(argv[i], stdout, NULL);
-		if (i < argc-1) putc(' ', NULL);
+	for (i = 0; i < argc(); ++i) {
+		fputs(argv()[i], stdout, NULL);
+		if (i < argc()-1) putc(' ', NULL);
 		else putc('\n', NULL);
 	}
 

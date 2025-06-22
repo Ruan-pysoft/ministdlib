@@ -22,5 +22,3 @@ Upgrade the test suite
 ! high-level input (have puts, putc, etc, but no getc, gets, getline, etc)
 
 ANSI escape sequence helpers
-
-! move argv & envp to gobal (read-only) structure

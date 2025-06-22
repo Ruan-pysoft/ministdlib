@@ -3,7 +3,7 @@
 #include "ministd_string.h"
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	String own greeting;
 	String own recipient;

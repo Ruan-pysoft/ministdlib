@@ -3,8 +3,10 @@
 #include "ministd_types.h"
 
 int
-main(int n, char ref ref a)
+main(void)
 {
+	int n = argc();
+	char ref ref a = argv();
 	int i;
 
 	for (i = 1; i-n; i=-~i) {

@@ -6,7 +6,7 @@
 char buf[BUFCAP];
 
 int
-main(int n, char ref ref v)
+main(void)
 {
 	isz bytes_read;
 

@@ -4,6 +4,32 @@
 
 #include <asm/unistd.h>
 
+int __argc;
+char own own __argv;
+int __envc;
+char own own __envp;
+
+int
+argc(void)
+{
+	return __argc;
+}
+char ref ref
+argv(void)
+{
+	return __argv;
+}
+int
+envc(void)
+{
+	return __envc;
+}
+char ref ref
+envp(void)
+{
+	return __envp;
+}
+
 void
 exit(int exitcode)
 {
@@ -13,32 +39,33 @@ exit(int exitcode)
 	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();
 }
-int main(int argc, char ref ref argv);
+int main(void);
 extern void ministd_io_init(void);
 void
 setup(void)
 {
+	for (__envc = 0; __envp[__envc] != NULL; ++__envc);
+
 	ministd_io_init();
 }
 void
 _start(void)
 {
-	int argc;
-	char ref ref argv;
-
 	__asm__ volatile(
 		"mov %%rsp, %%rax;" /* sp -> ax */
-		"mov 24(%%rax), %[argc];" /* retrieve argc, top item of stack */
+		"mov 8(%%rax), %[argc];" /* retrieve argc, top item of stack */
 		"mov %%rax, %[argv];" /* retrieve argv, second-to-top of stack */
-		"add $32, %[argv];"
-		: [argc] "=r" (argc), [argv] "=r" (argv) /* outputs */
+		"add $16, %[argv];"
+		: [argc] "=r" (__argc), [argv] "=r" (__argv) /* outputs */
 		: /* inputs */
 		: "rax" /* clobber */
 	);
 
+	__envp = __argv + __argc + 1;
+
 	setup();
 
-	exit(main(argc, argv));
+	exit(main());
 	__builtin_unreachable();
 }
 

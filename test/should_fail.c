@@ -1,7 +1,7 @@
 #include "ministd_io.h"
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	puts("This test should fail.", NULL);
 	puts("The expected output should be a single line \"hi.\"", NULL);

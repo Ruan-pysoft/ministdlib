@@ -2,7 +2,7 @@
 #include "ministd_io.h"
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	puts("Hello, world!", NULL);
 

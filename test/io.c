@@ -5,7 +5,7 @@
 char buf[1024];
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	puts("Hello, world!", NULL); /* output to stdout with newline */
 	putc('!', NULL);             /* output single char to stdout */

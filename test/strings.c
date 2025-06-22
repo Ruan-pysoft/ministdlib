@@ -51,7 +51,7 @@ expect_usz(const char ref name, usz expr, usz expect)
 }
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	err_t err = ERR_OK;
 	String own greeting;

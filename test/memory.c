@@ -15,7 +15,7 @@ strlen(const char ref str)
 }
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	err_t err = ERR_OK;
 	int i;

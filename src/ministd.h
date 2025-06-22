@@ -4,6 +4,11 @@
 #include "ministd_io.h"
 #include "ministd_types.h"
 
+int argc(void);
+char ref ref argv(void);
+int envc(void);
+char ref ref envp(void);
+
 void exit(int exitcode);
 void _start(void);
 

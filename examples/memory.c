@@ -7,7 +7,7 @@ char *allocs[1024];
 const char *test_string = "Hai #.... :3";
 
 int
-main(int argc, char **argv)
+main(void)
 {
 	int i;
 
