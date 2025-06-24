@@ -102,6 +102,23 @@ I started the chat on a Friday or Saturday iirc,
 and I've been working on the project since *at least* that Wednesday,
 so I was closer to three or four days into the project.
 
+## Contributing
+
+In the end, this is a personal project
+for my own enjoyment and learning,
+so I want to do most of the programming myself.
+
+However, if you do have a bugfix or suggestion,
+feel free to contact me
+(I'll figure out how to get a bugtracker or something set up at some point)
+and I'll take a look at it at some point.
+
+And yes, atm this is rather poorly documented,
+the testcases are a mess,
+and there are files all over the place
+(though most of the random ones should be in my `.gitignore`...),
+I'll get around to fixing all that eventually...
+
 ## License
 
 (Also, work out again how dual licensing works,
