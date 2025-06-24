@@ -43,6 +43,8 @@ const char ref err_repr(err_t err)
 		case ERR_RANGE: return "ERR_RANGE";
 
 		case ERR_OVERFLOW: return "ERR_OVERFLOW";
+		case ERR_EOF: return "ERR_EOF";
+		case ERR_PARSE: return "ERR_PARSE";
 	}
 
 	return "ERR_[UNKNOWN]";
@@ -89,6 +91,8 @@ err_str(err_t err)
 		case ERR_RANGE: return "Math result not representable";
 
 		case ERR_OVERFLOW: return "Operation would result in overflow";
+		case ERR_EOF: return "Hit EOF while parsing";
+		case ERR_PARSE: return "Parse error";
 	}
 
 	return "unknown error code";

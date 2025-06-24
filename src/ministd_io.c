@@ -142,6 +142,12 @@ from_fd(int fd, err_t ref err_out)
 isz
 read(FILE ref file, ptr buf, usz cap, err_t ref err_out)
 {
+	if (!cap) return 0;
+	if (file->has_ungot) {
+		file->has_ungot = false;
+		*(char*)buf = file->ungot;
+		return 1+read(file, (char*)buf+1, cap-1, err_out);
+	}
 	return file->read(file, buf, cap, err_out);
 }
 isz
@@ -153,6 +159,31 @@ void
 close(FILE ref file, err_t ref err_out)
 {
 	file->close(file, err_out);
+}
+void
+ungetc(FILE ref file, char c, err_t ref err_out)
+{
+	if (file->has_ungot) {
+		ERR_VOID(ERR_PERM);
+	}
+	file->has_ungot = true;
+	file->ungot = c;
+}
+int
+peekc(FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	unsigned char c;
+
+	if (read(file, &c, 1, &err) == 0) {
+		TRY_WITH(err, -1);
+		return -1;
+	}
+	TRY_WITH(err, -1);
+	ungetc(file, c, &err);
+	TRY_WITH(err, -1);
+
+	return c;
 }
 
 isz
@@ -203,7 +234,7 @@ fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	isz len = 0;
-	isz bytes_read;
+	int c;
 	bool whole_word = false;
 
 	if (buf == NULL || cap == 0) return 0;
@@ -212,51 +243,49 @@ fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out)
 		return false;
 	}
 
-	*buf = ' ';
-	while (*buf <= ' ') {
-		bytes_read = read(file, buf, 1, &err);
-		if (err) {
-			*buf = 0;
-			ERR_WITH(err, false);
+	*buf = 0;
+	while ((c = peekc(file, &err)) <= ' ' && c != -1) {
+		TRY_WITH(err, false);
+		fgetc(file, &err);
+		TRY_WITH(err, false);
+	}
+	if (c == -1) {
+		TRY_WITH(err, false);
+		return true;
+	}
+
+	len = 0;
+	for (;;) {
+		c = fgetc(file, &err);
+		TRY_WITH(err, false);
+
+		buf[len] = c;
+		buf[len+1] = 0;
+		++len;
+
+		c = peekc(file, &err);
+		TRY_WITH(err, false);
+		if (c == -1 || c <= ' ') {
+			return true;
 		}
-		if (bytes_read == 0) {
-			*buf = 0;
+
+		if (len == cap-1) {
 			return false;
 		}
 	}
-
-	len = 1;
-	while (len < cap-1) {
-		buf[len+1] = 0;
-		bytes_read = read(file, buf+len, 1, &err);
-		if (err) {
-			buf[len] = 0;
-			ERR_WITH(err, false);
-		}
-		if (bytes_read == 0) {
-			buf[len] = 0;
-			return true;
-		}
-		++len;
-		if (buf[len-1] <= ' ') break;
-	}
-	if (buf[len] <= ' ') {
-		buf[len] = 0;
-		return true;
-	} else {
-		return false;
-	}
 }
-char
+int
 fgetc(FILE ref file, err_t ref err_out)
 {
-	char res;
-	if (read(file, &res, 1, err_out) != 0) {
-		res = 0;
-		if (err_out != NULL && *err_out == ERR_OK) {
-			*err_out = ERR_IO;
-		}
-	}
+	err_t err = ERR_OK;
+	unsigned char res;
+	isz bytes_read;
+
+	bytes_read = read(file, &res, 1, &err);
+	TRY_WITH(err, -1);
+	if (bytes_read < 0) ERR_WITH(ERR_IO, -1);
+	if (bytes_read != 1) return -1;
+
 	return res;
 }
 bool

@@ -11,11 +11,13 @@ rethink strings.h
 
 Upgrade the test suite
 
-...
-
 printf with floats
 printf with string type
+expand printf suite to have field width specifiers, etc
+	probably with some sort of fmt struct?
 
-! scanf-style suite
+scanf with floats
+scanf with string type
+expand scanf suite to restrict amount of characters it'll read from the input buffer
 
-ANSI escape sequence helpers
+documentation

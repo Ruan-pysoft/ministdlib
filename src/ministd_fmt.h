@@ -65,4 +65,26 @@ isz fprintulx(unsigned long ul, FILE ref file, err_t ref err_out);
 #define fprintp(p, file, err_out)	fprintuzx((usz)p, file, err_out)
 #define printp(p, file, err_out)	printuzx((usz)p, err_out)
 
+char fscanc(FILE ref file, err_t ref err_out);
+char own fscans(FILE ref file, err_t ref err_out);
+long fscanl(FILE ref file, err_t ref err_out);
+unsigned long fscanul(FILE ref file, err_t ref err_out);
+isz fscanz(FILE ref file, err_t ref err_out);
+usz fscanuz(FILE ref file, err_t ref err_out);
+int fscani(FILE ref file, err_t ref err_out);
+unsigned int fscanu(FILE ref file, err_t ref err_out);
+short fscanh(FILE ref file, err_t ref err_out);
+unsigned short fscanuh(FILE ref file, err_t ref err_out);
+
+#define scanc(err_out)	fscanc(stdin, err_out)
+#define scans(err_out)	fscans(stdin, err_out)
+#define scanl(err_out)	fscanl(stdin, err_out)
+#define scanul(err_out)	fscanul(stdin, err_out)
+#define scanz(err_out)	fscanz(stdin, err_out)
+#define scanuz(err_out)	fscanuz(stdin, err_out)
+#define scani(err_out)	fscani(stdin, err_out)
+#define scanu(err_out)	fscanu(stdin, err_out)
+#define scanh(err_out)	fscanh(stdin, err_out)
+#define scanuh(err_out)	fscanuh(stdin, err_out)
+
 #endif /* _RM_STD_FMT_H */

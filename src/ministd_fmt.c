@@ -1,5 +1,8 @@
 #include "ministd_fmt.h"
 
+#include "ministd_error.h"
+#include "ministd_io.h"
+
 isz
 fprintc(char c, FILE ref file, err_t ref err_out)
 {
@@ -175,4 +178,117 @@ fprintulx(unsigned long ul, FILE ref file, err_t ref err_out)
 	--len;
 
 	return fputs(buf+16-len, file, err_out);
+}
+
+#include "ministd_memory.h"
+
+char
+fscanc(FILE ref file, err_t ref err_out)
+{
+	return fgetc(file, err_out);
+}
+char own
+fscans(FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	char own result;
+	usz result_cap;
+	isz len = 0;
+	isz bytes_read;
+
+	result_cap = 128;
+	result = alloc(result_cap, &err);
+	TRY_WITH(err, NULL);
+
+	if (fgets(result, result_cap, file, &err)) {
+		return result;
+	}
+
+	for (;;) {
+		if (err != ERR_OK) {
+			free(result);
+			ERR_WITH(err, NULL);
+		}
+
+		result = realloc(result, 2*result_cap, &err);
+		TRY_WITH(err, NULL);
+
+		if (fgets(result+result_cap, result_cap, file, &err)) {
+			return result;
+		}
+		result_cap *= 2;
+	}
+}
+#define INTSCAN(type) do {                                           \
+		err_t err = ERR_OK;                                  \
+		char c;                                              \
+		type res = 0;                                        \
+                                                                     \
+		while ((c = peekc(file, &err) != -1) && c <= ' ') {  \
+			TRY_WITH(err, 0);                            \
+			fgetc(file, &err);                           \
+			TRY_WITH(err, 0);                            \
+		}                                                    \
+		TRY_WITH(err, 0);                                    \
+		if (c == -1) ERR_WITH(ERR_EOF, 0);                   \
+                                                                     \
+		if (c < '0' || c > '9') ERR_WITH(ERR_PARSE, 0);      \
+		while ((c = fgetc(file, &err)) >= '0' && c <= '9') { \
+			const type oldres = res;                     \
+			TRY_WITH(err, 0);                            \
+                                                                     \
+			res *= 10;                                   \
+			res += c - '0';                              \
+                                                                     \
+			if (res < oldres) {                          \
+				ERR_WITH(ERR_OVERFLOW, 0);           \
+			}                                            \
+		}                                                    \
+		TRY_WITH(err, 0);                                    \
+		if (c != -1) {                                       \
+			ungetc(file, c, &err);                       \
+			TRY_WITH(err, 0);                            \
+		}                                                    \
+                                                                     \
+		return res;                                          \
+	} while (0)
+long
+fscanl(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(signed long);
+}
+unsigned long
+fscanul(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(unsigned long);
+}
+isz
+fscanz(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(isz);
+}
+usz
+fscanuz(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(usz);
+}
+int
+fscani(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(signed int);
+}
+unsigned int
+fscanu(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(unsigned int);
+}
+short
+fscanh(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(signed short);
+}
+unsigned short
+fscanuh(FILE ref file, err_t ref err_out)
+{
+	INTSCAN(unsigned short);
 }

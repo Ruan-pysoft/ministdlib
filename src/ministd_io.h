@@ -18,6 +18,8 @@ typedef struct FILE {
 	FILE_write_t write;
 	FILE_close_t close;
 	FILE_run_t run;
+	char ungot;
+	bool has_ungot;
 } FILE;
 
 extern FILE ref stdin;
@@ -34,6 +36,8 @@ FILE own from_fd(int fd, err_t ref err_out);
 isz read(FILE ref file, ptr buf, usz cap, err_t ref err_out);
 isz write(FILE ref file, const ptr buf, usz cap, err_t ref err_out);
 void close(FILE ref file, err_t ref err_out);
+void ungetc(FILE ref file, char c, err_t ref err_out);
+int peekc(FILE ref file, err_t ref err_out);
 
 isz fputs(const char ref str, FILE ref file, err_t ref err_out);
 int fputc(char c, FILE ref file, err_t ref err_out);
@@ -41,7 +45,7 @@ isz puts(const char ref str, err_t ref err_out);
 int putc(char c, err_t ref err_out);
 
 bool fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out);
-char fgetc(FILE ref file, err_t ref err_out);
+int fgetc(FILE ref file, err_t ref err_out);
 bool fgetline(char ref buf, usz cap, FILE ref file, err_t ref err_out);
 bool gets(char ref buf, usz cap, err_t ref err_out);
 char getc(err_t ref err_out);

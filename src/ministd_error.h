@@ -52,7 +52,9 @@ typedef enum err_t {
 	ERR_RANGE	= ERANGE,	/* 34 -- Math result not representable  */
 
 	/* custom errnos */
-	ERR_OVERFLOW			/* operation would cause overflow */
+	ERR_OVERFLOW,			/* operation would cause overflow */
+	ERR_EOF,			/* hit eof while parsing */
+	ERR_PARSE			/* parse error */
 
 } err_t;
 
