@@ -162,6 +162,11 @@ close(FILE ref file, err_t ref err_out)
 	file->close(file, err_out);
 }
 void
+flush(FILE ref file, err_t ref err_out)
+{
+	file->run(file, FO_FLUSH, err_out);
+}
+void
 ungetc(FILE ref file, char c, err_t ref err_out)
 {
 	if (file->has_ungot) {
@@ -538,6 +543,17 @@ ministd_io_cleanup(void)
 	 * during other cleanup rather difficult...
 	 */
 }
+static isz
+stdin_read(struct BufferedFile ref this, ptr buf, usz cap, err_t ref err_out)
+{
+	/* tie stdin to stdout -- TODO: Allow this with buffered files in general? */
+	err_t err = ERR_OK;
+
+	flush(stdout, &err);
+	TRY_WITH(err, -1);
+
+	return bf_read(this, buf, cap, err_out);
+}
 void
 ministd_io_init(void)
 {
@@ -554,6 +570,7 @@ ministd_io_init(void)
 		perror(err, "Error while initialising stdin");
 		exit(127);
 	}
+	buffered_stdin->ptrs.read = (FILE_read_t)stdin_read;
 	stdin = (FILE ref)buffered_stdin;
 
 	raw_stdout.ptrs = raw_file_ptrs;

@@ -46,8 +46,9 @@ main(void)
 
 	/* clear screen & move cursor to top-left */
 	for (y = 0; y <= SLEN; ++y) printc('\n', NULL);
-	term_csi_clear_all(stdout, NULL);
+	term_csi_clearscreen(stdout, NULL);
 	term_csi_goto(1, 1, stdout, NULL);
+	flush(stdout, NULL);
 
 	t = SLEN/2-r;
 	for (;;) {
@@ -88,6 +89,7 @@ main(void)
 			printc((*front)[update->x][update->y], NULL);
 		}
 		term_csi_goto(1, 1, stdout, NULL);
+		flush(stdout, NULL);
 
 		{ tmp = front; front = back; back = tmp; }
 
