@@ -1,6 +1,4 @@
-! More complete memory.h
-	! memcpy, memmove, etc
-	make memzero more efficient
+memory efficiency: improve efficiency of memmove and memzero
 
 ! Move over from sbrk to mmap
 	Maybe also use sbrk for small values?

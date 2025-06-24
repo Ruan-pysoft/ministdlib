@@ -177,23 +177,45 @@ free(own_ptr buf)
 }
 
 void
-memzero(own_ptr buf, usz bytes)
+memzero(ptr buf, usz bytes)
 {
 	usz i;
 
 	for (i = 0; i < bytes; ++i) {
-		((char*)buf)[i] = 0;
+		((char ref)buf)[i] = 0;
 	}
 }
 void
-nmemzero(own_ptr buf, usz size, usz n)
+nmemzero(ptr buf, usz size, usz n, err_t ref err_out)
 {
 	usz total_size;
 
 	if (!size || !n) return;
 	total_size = size * n;
-	if (total_size / n != size) return;
+	if (total_size / n != size) {
+		ERR_VOID(ERR_OVERFLOW);
+	}
 	memzero(buf, total_size);
+}
+void
+memmove(void ref dest, const void ref src, usz n)
+{
+	usz i;
+	for (i = 0; i < n; ++i) {
+		((char ref)dest)[i] = ((char ref)src)[i];
+	}
+}
+void
+nmemmove(void ref dest, const void ref src, usz size, usz n, err_t ref err_out)
+{
+	usz total_size;
+
+	if (!size || !n) return;
+	total_size = size * n;
+	if (total_size / n != size) {
+		ERR_VOID(ERR_OVERFLOW);
+	}
+	memmove(dest, src, total_size);
 }
 
 own_ptr

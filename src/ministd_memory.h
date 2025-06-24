@@ -11,7 +11,9 @@ own_ptr nrealloc(own_ptr buf, usz size, usz n, err_t ref err_out);
 void free(own_ptr buf);
 
 void memzero(ptr buf, usz bytes);
-void nmemzero(ptr buf, usz size, usz n);
+void nmemzero(ptr buf, usz size, usz n, err_t ref err_out);
+void memmove(void ref dest, const void ref src, usz n);
+void nmemmove(void ref dest, const void ref src, usz size, usz n, err_t ref err_out);
 
 struct Allocator;
 typedef own_ptr (*Allocator_alloc_t)(struct Allocator ref this, usz bytes, err_t ref err_out);
