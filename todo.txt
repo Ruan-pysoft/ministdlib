@@ -7,8 +7,6 @@ implement multithreading
 
 rethink strings.h
 
-! implement buffered io
-
 Upgrade the test suite
 
 printf with floats

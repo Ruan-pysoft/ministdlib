@@ -91,7 +91,7 @@ err_str(err_t err)
 		case ERR_RANGE: return "Math result not representable";
 
 		case ERR_OVERFLOW: return "Operation would result in overflow";
-		case ERR_EOF: return "Hit EOF while parsing";
+		case ERR_EOF: return "Encountered EOF";
 		case ERR_PARSE: return "Parse error";
 	}
 

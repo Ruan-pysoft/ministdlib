@@ -9,6 +9,7 @@ char ref ref argv(void);
 int envc(void);
 char ref ref envp(void);
 
+void atexit(void (ref func)(void));
 void exit(int exitcode);
 void _start(void);
 

@@ -30,11 +30,25 @@ envp(void)
 	return __envp;
 }
 
+#define EXITHOOKS_CAP 64
+static void (ref exithooks[EXITHOOKS_CAP])(void);
+static usz exithooks_count = 0;
+
+void
+atexit(void(ref func)(void))
+{
+	exithooks[exithooks_count++] = func;
+}
 void
 exit(int exitcode)
 {
 	isz lcode, dummy;
+	isz i;
 	lcode = exitcode;
+
+	for (i = 0; i < exithooks_count; ++i) {
+		exithooks[i]();
+	}
 
 	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();

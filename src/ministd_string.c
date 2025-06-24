@@ -323,7 +323,7 @@ sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
 	return cap;
 }
 void
-sf_close(StringFile ref file)
+sf_close(StringFile ref file, err_t ref err_out)
 {
 	file->s = 0;
 	file->content_len = 0;
