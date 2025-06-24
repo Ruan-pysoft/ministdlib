@@ -5,4 +5,4 @@ inline assembly -- How to Use Inline Assembly Language in C Code -- https://gcc.
 suggestions/inspiration -- Re-designing the standard library -- https://www.reddit.com/r/C_Programming/comments/feduq2
 plan9 manpages -- plan 9 - 2 -- https://man.cat-v.org/plan_9/2/
 	especially string.h -- string -- https://man.cat-v.org/plan_9/2/string
-brainstorming using chatgpt -- [link to be added later]
+brainstorming using chatgpt -- https://chatgpt.com/share/685b0e46-503c-8012-919d-b427104c1e9b
