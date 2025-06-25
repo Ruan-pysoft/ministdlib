@@ -55,6 +55,7 @@ bool getline(char ref buf, usz cap, err_t ref err_out);
 typedef struct BufferedFile BufferedFile;
 
 BufferedFile own bf_new(FILE own file, err_t ref err_out);
-BufferedFile own bf_new_from(FILE own file, own_ptr buf, usz cap, err_t ref err_out);
+BufferedFile own bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
+			     own_ptr write_buf, usz write_cap, err_t ref err_out);
 
 #endif /* _RM_STD_IO_H */

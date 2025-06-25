@@ -357,10 +357,14 @@ getline(char ref buf, usz cap, err_t ref err_out)
 struct BufferedFile {
 	FILE ptrs;
 	FILE ref raw;
-	own_ptr buf;
-	ptr buf_pos;
-	ptr buf_end;
-	usz cap;
+	own_ptr read_buf;
+	ptr read_buf_pos;
+	ptr read_buf_end;
+	usz read_cap;
+	own_ptr write_buf;
+	ptr write_buf_pos;
+	ptr write_buf_end;
+	usz write_cap;
 };
 
 static BufferedFile own buffered_stdin;
@@ -383,15 +387,25 @@ BufferedFile own
 bf_new(FILE own file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	own_ptr buf;
+	own_ptr read_buf;
+	own_ptr write_buf;
 
-	buf = alloc(DEFAULT_BUFSIZE, &err);
+	read_buf = alloc(DEFAULT_BUFSIZE, &err);
 	TRY_WITH(err, NULL);
+	write_buf = alloc(DEFAULT_BUFSIZE, &err);
+	if (err != ERR_OK) {
+		free(read_buf);
+		ERR_WITH(err, NULL);
+	}
 
-	return bf_new_from(file, buf, DEFAULT_BUFSIZE, err_out);
+	return bf_new_from(
+		file, read_buf, DEFAULT_BUFSIZE,
+		write_buf, DEFAULT_BUFSIZE, err_out
+	);
 }
 BufferedFile own
-bf_new_from(FILE own file, own_ptr buf, usz cap, err_t ref err_out)
+bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
+	    own_ptr write_buf, usz write_cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	BufferedFile own res;
@@ -401,10 +415,16 @@ bf_new_from(FILE own file, own_ptr buf, usz cap, err_t ref err_out)
 
 	res->ptrs = buffered_file_ptrs;
 	res->raw = file;
-	res->buf = buf;
-	res->buf_pos = buf;
-	res->buf_end = buf;
-	res->cap = cap;
+
+	res->read_buf = read_buf;
+	res->read_buf_pos = read_buf;
+	res->read_buf_end = read_buf;
+	res->read_cap = read_cap;
+
+	res->write_buf = write_buf;
+	res->write_buf_pos = write_buf;
+	res->write_buf_end = write_buf;
+	res->write_cap = write_cap;
 
 	return res;
 }
@@ -415,27 +435,27 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 	err_t err = ERR_OK;
 	usz to_read;
 
-	if (file->buf_pos == file->buf_end && cap > file->cap) {
+	if (file->read_buf_pos == file->read_buf_end && cap > file->read_cap) {
 		return read(file->raw, buf, cap, err_out);
 	}
 
-	if (file->buf_pos == file->buf_end) {
+	if (file->read_buf_pos == file->read_buf_end) {
 		isz bytes_read;
 
-		bytes_read = read(file->raw, file->buf, file->cap, &err);
+		bytes_read = read(file->raw, file->read_buf, file->read_cap, &err);
 		TRY_WITH(err, -1);
 
 		if (bytes_read == 0) return 0;
 
-		file->buf_pos = file->buf;
-		file->buf_end = (char*)file->buf + bytes_read;
+		file->read_buf_pos = file->read_buf;
+		file->read_buf_end = (char*)file->read_buf + bytes_read;
 	}
 
-	to_read = (char ref)file->buf_end - (char ref)file->buf_pos;
+	to_read = (char ref)file->read_buf_end - (char ref)file->read_buf_pos;
 	if (cap < to_read) to_read = cap;
 
-	memmove(buf, file->buf_pos, to_read);
-	file->buf_pos = (char ref)file->buf_pos + to_read;
+	memmove(buf, file->read_buf_pos, to_read);
+	file->read_buf_pos = (char ref)file->read_buf_pos + to_read;
 
 	return to_read;
 }
@@ -444,49 +464,49 @@ bf_flush(BufferedFile ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
-	while (file->buf_end > file->buf_pos) {
+	while (file->write_buf_end > file->write_buf_pos) {
 		isz bytes_written;
 
 		bytes_written = write(
 			file->raw,
-			file->buf_pos,
-			(char*)file->buf_end - (char*)file->buf_pos,
+			file->write_buf_pos,
+			(char*)file->write_buf_end - (char*)file->write_buf_pos,
 			&err
 		);
 		TRY_VOID(err);
 
 		if (bytes_written == 0) return;
 
-		file->buf_pos = (char ref)file->buf_pos + bytes_written;
+		file->write_buf_pos = (char ref)file->write_buf_pos + bytes_written;
 	}
 
-	file->buf_pos = file->buf;
-	file->buf_end = file->buf;
+	file->write_buf_pos = file->write_buf;
+	file->write_buf_end = file->write_buf;
 }
 isz
 bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
-	if ((char ref)file->buf_end + cap > (char ref)file->buf + file->cap) {
+	if ((char ref)file->write_buf_end + cap > (char ref)file->write_buf + file->write_cap) {
 		bf_flush(file, &err);
 		TRY_WITH(err, -1);
 
-		if (file->buf_pos < file->buf_end) {
+		if (file->write_buf_pos < file->write_buf_end) {
 			return 0;
 		}
 
-		if (cap > file->cap) {
+		if (cap > file->write_cap) {
 			return write(file->raw, buf, cap, err_out);
 		} else {
-			file->buf_pos = file->buf;
-			file->buf_end = (char ref)file->buf + cap;
-			memmove(file->buf, buf, cap);
+			file->write_buf_pos = file->write_buf;
+			file->write_buf_end = (char ref)file->write_buf + cap;
+			memmove(file->write_buf, buf, cap);
 			return cap;
 		}
 	} else {
-		memmove(file->buf_end, buf, cap);
-		file->buf_end = (char ref)file->buf_end + cap;
+		memmove(file->write_buf_end, buf, cap);
+		file->write_buf_end = (char ref)file->write_buf_end + cap;
 		return cap;
 	}
 }
@@ -497,7 +517,8 @@ bf_close(BufferedFile ref file, err_t ref err_out)
 
 	bf_flush(file, &err);
 	TRY_VOID(err);
-	free(file->buf);
+	free(file->read_buf);
+	free(file->write_buf);
 	close(file->raw, err_out);
 }
 isz
