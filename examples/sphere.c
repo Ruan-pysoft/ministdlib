@@ -1,6 +1,7 @@
 #include "ministd.h"
 #include "ministd_fmt.h"
 #include "ministd_term.h"
+#include "ministd_time.h"
 #include "ministd_types.h"
 
 #define SLEN 41
@@ -38,11 +39,16 @@ main(void)
 {
 	int r;
 	int x, y, t;
+	float fps;
+	float frametime;
 
 	prints("Sphere radius> ", NULL);
 	getline(buf, 10, NULL);
 	r = atoi(buf);
 	if (r > SLEN>>1) r = SLEN>>1;
+
+	fps = 2*r + 1; /* show whole sphere in one second */
+	frametime = 1 / (float)fps;
 
 	/* clear screen & move cursor to top-left */
 	for (y = 0; y <= SLEN; ++y) printc('\n', NULL);
@@ -50,7 +56,8 @@ main(void)
 	term_csi_goto(1, 1, stdout, NULL);
 	flush(stdout, NULL);
 
-	t = SLEN/2-r;
+	t = SLEN/2-r-2;
+	if (t < 0) t = 0;
 	for (;;) {
 		char (ref tmp)[SLEN][SLEN];
 		struct update ref update;
@@ -94,8 +101,11 @@ main(void)
 		{ tmp = front; front = back; back = tmp; }
 
 		++t;
-		if (t == SLEN/2+r+1) t = SLEN/2-r;
-		/* sleep(1); */
+		if (t == SLEN/2+r+2 + 1 || t == SLEN) {
+			t = SLEN/2-r-2;
+			if (t < 0) t = 0;
+		}
+		sleep(frametime, NULL);
 	}
 
 	return 0;

@@ -36,7 +36,7 @@ are considered "important" and I'll likely tackle those first.
 
 A quick demo of the `ministd_term.h` header.
 
-[![asciicast](https://asciinema.org/a/724081.svg)](https://asciinema.org/a/724081)
+[![asciicast](https://asciinema.org/a/724687.svg)](https://asciinema.org/a/724687)
 
 A demo of `examples/sphere.c`.
 
