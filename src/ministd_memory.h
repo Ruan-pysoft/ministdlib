@@ -25,6 +25,8 @@ typedef struct Allocator {
 	Allocator_free_t free;
 } Allocator;
 
+extern Allocator sbrk_allocator;
+
 own_ptr a_alloc(Allocator ref alloc, usz bytes, err_t ref err_out);
 own_ptr a_nalloc(Allocator ref alloc, usz size, usz n, err_t ref err_out);
 own_ptr a_realloc(Allocator ref alloc, own_ptr buf, usz bytes, err_t ref err_out);
