@@ -3,7 +3,7 @@
 A toy stdlib for c89 made for fun and learning
 (and procrastinating studying math...)
 
-Built with `-ffreestanding` and `-nostd` and 100% c89 code
+Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 (though the inline assembly parts might be a gcc extension?).
 It is entirely self-contained and written from scratch by me.
 
