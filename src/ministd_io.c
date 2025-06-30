@@ -202,7 +202,7 @@ fputs(const char ref str, FILE ref file, err_t ref err_out)
 	while (written < len) {
 		isz bytes_written;
 
-		bytes_written = write(file, (ptr)str, len, &err);
+		bytes_written = write(file, (ptr)(str + written), len - written, &err);
 		TRY_WITH(err, -1);
 		if (bytes_written == 0) ERR_WITH(ERR_IO, -1);
 
