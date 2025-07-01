@@ -575,12 +575,32 @@ stdin_read(struct BufferedFile ref this, ptr buf, usz cap, err_t ref err_out)
 
 	return bf_read(this, buf, cap, err_out);
 }
+static isz
+stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
+{
+	/* tie stderr to stdout */
+	err_t err = ERR_OK;
+	isz res;
+
+	flush(stdout, &err);
+	/* no TRY_WITH
+	 * write to stderr regardless of if flushing stdout was successful.
+	 */
+
+	res = raw_file_write(this, buf, cap, err_out);
+	if (err != ERR_OK && err_out != NULL && *err_out != ERR_OK) {
+		ERR_WITH(err, -1);
+	}
+
+	return res;
+}
 void
 ministd_io_init(void)
 {
 	err_t err = ERR_OK;
 
 	raw_stderr.ptrs = raw_file_ptrs;
+	raw_stderr.ptrs.write = (FILE_write_t)stderr_write;
 	raw_stderr.fd = 2;
 	stderr = (FILE ref)&raw_stderr;
 
