@@ -86,7 +86,7 @@ from which [this](https://old.reddit.com/r/C_Programming/comments/feduq2/comment
 and I believe [this](https://old.reddit.com/r/C_Programming/comments/feduq2/comment/fjp3gj0) comment pointed me to plan9's c stdlib.
 
 Lastly, I also used ChatGPT, mostly for idea generation and debugging.
-I wrote every line of code with my own two fingers
+I wrote every line of code with my own ten fingers
 (though I might've used some search-and-replace or copy-and-paste);
 none of it is AI-generated,
 though ChatGPT has generated some code in the chat,
