@@ -3,6 +3,9 @@
 A toy stdlib for c89 made for fun and learning
 (and procrastinating studying math...)
 
+Main repo: https://sr.ht/~ruan_p/ministdlib  
+Official github mirror: https://github.com/Ruan-pysoft/ministdlib
+
 Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 (though the inline assembly parts might be a gcc extension?).
 It is entirely self-contained and written from scratch by me.
@@ -110,8 +113,11 @@ so I want to do most of the programming myself.
 
 However, if you do have a bugfix or suggestion,
 feel free to contact me
-(I'll figure out how to get a bugtracker or something set up at some point)
 and I'll take a look at it eventually.
+
+You can create an issue at the [official github mirror](https://github.com/Ruan-pysoft/ministdlib/issues),
+or you can create an issue on the issue tracker at [~ruan_p/ministdlib](https://todo.sr.ht/~ruan_p/ministdlib).
+You can also discuss the project or send a patch on the [mailing list](https://lists.sr.ht/~ruan_p/ministdlib).
 
 And yes, atm this is rather poorly documented,
 the testcases are a mess,
