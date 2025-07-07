@@ -75,6 +75,17 @@ _start(void)
 		: "rax" /* clobber */
 	);
 
+	/* align stack pointer to 16 bytes before calling functions
+	 * (because apparently we need to do that)
+	 */
+	__asm__ volatile(
+		"add $0x10, %%rsp;" /* sp += 16 */
+		"and $0xFFFFFFFFFFFFFFF0, %%rsp;" /* make sp divisible by 16 (rounding down) */
+		: /* outputs */
+		: /* inputs */
+		: /* clobber */
+	);
+
 	__envp = __argv + __argc + 1;
 
 	setup();
