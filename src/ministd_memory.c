@@ -1,7 +1,7 @@
-#include "ministd_memory.h"
+#include <ministd_memory.h>
 
-#include "ministd_error.h"
-#include "ministd_syscall.h"
+#include <ministd_error.h>
+#include <ministd_syscall.h>
 
 /* screw it, I'll do this manually later */
 #define _SYS_MMAN_H
@@ -57,6 +57,8 @@ std_alloc(Allocator ref this, usz bytes, err_t ref err_out)
 	own_ptr block;
 	std_header_t ref header;
 
+	(void) this;
+
 	if (!bytes) return NULL;
 
 	total_size = sizeof(std_header_t) + bytes;
@@ -103,6 +105,8 @@ void
 std_free(Allocator ref this, own_ptr buf)
 {
 	std_header_t ref header;
+
+	(void) this;
 
 	if (!buf) return;
 
@@ -239,6 +243,8 @@ sbrk_alloc(Allocator ref this, usz bytes, err_t ref err_out)
 	own_ptr block;
 	sbrk_header_t ref header;
 
+	(void) this;
+
 	if (!bytes) return 0;
 
 	header = sbrk_get_free_block(bytes);
@@ -300,6 +306,8 @@ sbrk_free(Allocator ref this, own_ptr buf)
 {
 	sbrk_header_t ref header, ref tmp;
 	ptr programbreak;
+
+	(void) this;
 
 	if (!buf) return;
 	header = ((sbrk_header_t*)buf) - 1;

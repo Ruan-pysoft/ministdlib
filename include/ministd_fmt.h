@@ -1,9 +1,9 @@
 #ifndef _RM_STD_FMT_H
 #define _RM_STD_FMT_H
 
-#include "ministd_io.h"
-#include "ministd_error.h"
-#include "ministd_types.h"
+#include <ministd_error.h>
+#include <ministd_io.h>
+#include <ministd_types.h>
 
 #define FPRINT_RAW_DECL(type, suffix) \
 	isz fprint##suffix(type suffix, FILE ref file, err_t ref err_out); \

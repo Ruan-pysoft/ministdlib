@@ -1,6 +1,7 @@
-#include "ministd.h"
+#include <ministd.h>
 
-#include "ministd_syscall.h"
+#include <ministd_io.h>
+#include <ministd_syscall.h>
 
 #include <asm/unistd.h>
 
@@ -43,7 +44,7 @@ void
 exit(int exitcode)
 {
 	isz lcode, dummy;
-	isz i;
+	usz i;
 	lcode = exitcode;
 
 	for (i = 0; i < exithooks_count; ++i) {
@@ -93,8 +94,6 @@ _start(void)
 	exit(main());
 	__builtin_unreachable();
 }
-
-#include "ministd_io.h"
 
 void
 __stack_chk_fail(void)

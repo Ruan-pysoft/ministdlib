@@ -1,9 +1,11 @@
-#include "ministd_io.h"
+#include <ministd_io.h>
 
-#include "ministd_error.h"
-#include "ministd_memory.h"
-#include "ministd_syscall.h"
-#include "ministd_string.h"
+#include <ministd.h>
+#include <ministd_error.h>
+#include <ministd_memory.h>
+#include <ministd_memory.h>
+#include <ministd_string.h>
+#include <ministd_syscall.h>
 
 FILE ref stdin;
 FILE ref stdout;
@@ -23,6 +25,8 @@ static FILE raw_file_ptrs = {
 	(FILE_write_t)raw_file_write, /* .write */
 	(FILE_close_t)raw_file_close, /* .close */
 	(FILE_run_t)raw_file_misc,    /* .run */
+	0,                            /* .ungot */
+	false,                        /* .has_ungot */
 };
 
 static struct RAW_FILE raw_stdin;
@@ -47,8 +51,10 @@ raw_file_close(struct RAW_FILE ref this, err_t ref err_out)
 static isz
 raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
 {
-	isz r;
-	r = 0;
+	isz r = 0;
+
+	(void) this;
+	(void) err_out;
 
 	switch (op) {
 		case FO_FLUSH: {
@@ -199,7 +205,12 @@ fputs(const char ref str, FILE ref file, err_t ref err_out)
 	err_t err = ERR_OK;
 	isz written = 0;
 
-	while (written < len) {
+	/* TODO: make write, read, etc return `usz` rather than `isz`,
+	 * since the result can only be positive,
+	 * as negative values are mapped to `err_t`
+	 * (tho in the case of error it should now return 0 rather than -1)
+	 */
+	while (written < (isz)len) {
 		isz bytes_written;
 
 		bytes_written = write(file, (ptr)(str + written), len - written, &err);
@@ -251,9 +262,8 @@ bool
 fgets(char ref buf, usz cap, FILE ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	isz len = 0;
+	usz len = 0;
 	int c;
-	bool whole_word = false;
 
 	if (buf == NULL || cap == 0) return 0;
 	if (cap == 1) {
@@ -310,7 +320,7 @@ bool
 fgetline(char ref buf, usz cap, FILE ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	isz len = 0;
+	usz len = 0;
 	isz bytes_read;
 
 	if (buf == NULL || cap == 0) return 0;
@@ -352,8 +362,6 @@ getline(char ref buf, usz cap, err_t ref err_out)
 	return fgetline(buf, cap, stdin, err_out);
 }
 
-#include "ministd_memory.h"
-
 struct BufferedFile {
 	FILE ptrs;
 	FILE ref raw;
@@ -379,6 +387,8 @@ FILE buffered_file_ptrs = {
 	(FILE_write_t)bf_write, /* write */
 	(FILE_close_t)bf_close, /* close */
 	(FILE_run_t)bf_misc,    /* run */
+	0,                      /* ungot */
+	false,                  /* has_ungot */
 };
 
 #define DEFAULT_BUFSIZE (2 * 1024)

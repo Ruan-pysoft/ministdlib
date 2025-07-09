@@ -1,7 +1,7 @@
 #ifndef _RM_STD_ERROR_H
 #define _RM_STD_ERROR_H
 
-#include "ministd_types.h"
+#include <ministd_types.h>
 
 /* honestly, idk if this is cheating,
    but in my defence, this isn't libc but kernel headers */

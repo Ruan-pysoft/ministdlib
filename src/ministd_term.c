@@ -1,7 +1,7 @@
-#include "ministd_term.h"
+#include <ministd_term.h>
 
-#include "ministd_fmt.h"
-#include "ministd_string.h"
+#include <ministd_fmt.h>
+#include <ministd_string.h>
 
 static void
 csi_start(FILE ref file, err_t ref err_out)

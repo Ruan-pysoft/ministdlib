@@ -1,8 +1,8 @@
 #ifndef _RM_STD_IO_H
 #define _RM_STD_IO_H
 
-#include "ministd_types.h"
-#include "ministd_error.h"
+#include <ministd_types.h>
+#include <ministd_error.h>
 
 enum FILE_OP {
 	FO_FLUSH

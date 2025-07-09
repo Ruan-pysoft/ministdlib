@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gcc -ffreestanding -fno-builtin -Wno-builtin-declaration-mismatch -nostdlib -std=c89 -pedantic -I./include/ $@ -L. -lministd
+gcc -ffreestanding -fno-builtin -nostdlib -std=c89 -pedantic -I./include/ -Wall -Wextra -Wno-builtin-declaration-mismatch -O2 $@ -Lbuild/release/ -lministd

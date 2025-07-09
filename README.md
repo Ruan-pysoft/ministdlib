@@ -45,18 +45,20 @@ A demo of `examples/sphere.c`.
 
 ## Usage
 
-To compile the stdlib simply run `./clib`.
+To compile the stdlib simply run `make`.
 
-To compile a program run `./cc $programname`.
+To compile a program run `./cc $programname`
+(you must first compile the stdlib with `make MODE=release`)
+or `./cc_dbg $programname` for a debuggable stdlib.
 Note that the `cc` script is just a thin wrapper over `gcc`,
 so you can pass any flags you would pass to `gcc` to `cc`.
 
 Also note that the library is statically linked,
-so you **must** recompile the library with `./clib`
+so you **must** recompile the library with `make`
 after making any changes
 and **before** compiling any c file using it.
 
-You can run the tests with the command `./run-tests`.
+You can run the tests with the command `make test`.
 All of them *should* theoretically pass,
 except for `should-fail.c`, which should fail (duh).
 Also, my test suite is pretty useless for now,
@@ -64,6 +66,12 @@ I gotta work on that...
 (It did catch bugs a few times
 when I forgot to initialise an `err` variable to `ERR_OK`,
 so I guess it's not too useless)
+
+Lastly, you can compile the example programs with `make examples`,
+and the compiled binaries can be found under
+`build/debug/examples/bin` or `build/release/examples/bin`.
+
+TODO :: Actually add some way to list/run examples from the makefile
 
 ## Acknowledgements
 
@@ -95,6 +103,10 @@ none of it is AI-generated,
 though ChatGPT has generated some code in the chat,
 and I have looked through a few if its examples,
 so I might have used some of that code.
+
+The `Makefile` is mostly ChatGPT though,
+this is a C program not a Make program,
+so I don't mind using AI generation for that.
 
 Regardless, you can view the chat [here](https://chatgpt.com/share/685b0e46-503c-8012-919d-b427104c1e9b).
 I'll probably update that link as time goes on

@@ -1,6 +1,12 @@
 memory efficiency: improve efficiency of memmove and memzero
 
-implement multithreading
+! implement multithreading
+	1. implement polling for FILE's with fd's
+	2. implement `clone`
+	3. implement atomics, locks, and memory barriers
+	4. implement a threadpool interface
+	5. implement proper(!) testing for multithreading (especially atomics and locks)
+	6. (later?) implement message-passing
 
 rethink strings.h
 
@@ -18,3 +24,5 @@ scanf with string type
 expand scanf suite to restrict amount of characters it'll read from the input buffer
 
 documentation
+
+Some static checks (eg. enforcing own/ref semantics)

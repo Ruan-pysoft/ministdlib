@@ -14,7 +14,7 @@ main(void)
 	puts("Starting memory test...", NULL);
 
 	for (i = 0; i < 1024; ++i) {
-		int j;
+		usz j;
 
 		allocs[i] = alloc(16, NULL);
 		for (j = 0; j < strlen(test_string); ++j) {

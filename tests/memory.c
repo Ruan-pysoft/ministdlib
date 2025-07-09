@@ -5,16 +5,6 @@ char *allocs[1024];
 const char *test_string = "Hai #.... :3";
 
 int
-strlen(const char ref str)
-{
-	int res;
-
-	for (res = 0; str[res] != 0; ++res);
-
-	return res;
-}
-
-int
 main(void)
 {
 	err_t err = ERR_OK;

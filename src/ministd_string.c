@@ -1,7 +1,8 @@
-#include "ministd_string.h"
+#include <ministd_string.h>
 
-#include "ministd_error.h"
-#include "ministd_memory.h"
+#include <ministd_error.h>
+#include <ministd_io.h>
+#include <ministd_memory.h>
 
 usz
 strlen(const char ref cstr)
@@ -182,7 +183,7 @@ s_nappend(String own this, const char ref str, usz size, err_t ref err_out)
 	if (this == NULL) return NULL;
 
 	grow_by = size+1;
-	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
+	if (grow_by < (usz)(this->end-this->base)) grow_by = this->end-this->base;
 
 	if (left < size+1) this = s_grow(this, grow_by, err_out);
 	if (this == NULL) return NULL;
@@ -201,7 +202,7 @@ s_memappend(String own this, const char ref buf, usz size, err_t ref err_out)
 	const usz left = (this->end-this->base) - s_len(this);
 
 	grow_by = size+1;
-	if (grow_by < (this->end-this->base)) grow_by = this->end-this->base;
+	if (grow_by < (usz)(this->end-this->base)) grow_by = this->end-this->base;
 
 	if (left < size+1) this = s_grow(this, grow_by, err_out);
 	if (this == NULL) return NULL;
@@ -280,8 +281,6 @@ s_toupper(String ref this)
 	}
 }
 
-#include "ministd_io.h"
-
 struct StringFile {
 	FILE ptrs;
 	String ref s;
@@ -295,8 +294,10 @@ sf_read(StringFile ref file, ptr buf, usz cap, err_t ref err_out)
 	char ref bufptr;
 	const char ref initial = file->s->ptr;
 
+	(void)err_out;
+
 	readtill = file->s->base + file->content_len;
-	if (readtill - file->s->ptr > cap) readtill = file->s->ptr+cap;
+	if ((usz)(readtill - file->s->ptr) > cap) readtill = file->s->ptr+cap;
 
 	/* TODO: use something like memcpy here */
 	for (bufptr = buf; file->s->ptr < readtill; ++file->s->ptr, ++bufptr) {
@@ -316,7 +317,7 @@ sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
 		file->content_len = 0;
 		return -1;
 	}
-	if (file->s->ptr - file->s->base > file->content_len) {
+	if ((usz)(file->s->ptr - file->s->base) > file->content_len) {
 		file->content_len = file->s->ptr - file->s->base;
 	}
 
@@ -325,6 +326,8 @@ sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
 void
 sf_close(StringFile ref file, err_t ref err_out)
 {
+	(void)err_out;
+
 	file->s = 0;
 	file->content_len = 0;
 }
@@ -333,6 +336,9 @@ sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
 {
 	isz r;
 	r = 0;
+
+	(void)file;
+	(void)err_out;
 
 	switch (op) {
 		case FO_FLUSH: {
@@ -346,6 +352,8 @@ FILE string_file_ptrs = {
 	(FILE_write_t)sf_write, /* write */
 	(FILE_close_t)sf_close, /* close */
 	(FILE_run_t)sf_misc,    /* run */
+	0,                      /* ungot */
+	false,                  /* has_ungot */
 };
 
 StringFile own

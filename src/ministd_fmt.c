@@ -1,7 +1,8 @@
-#include "ministd_fmt.h"
+#include <ministd_fmt.h>
 
-#include "ministd_error.h"
-#include "ministd_io.h"
+#include <ministd_error.h>
+#include <ministd_io.h>
+#include <ministd_memory.h>
 
 isz
 fprintc(char c, FILE ref file, err_t ref err_out)
@@ -59,7 +60,6 @@ isz
 fprintul(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1 ~= 10^18 * 16, so no more than 21 digits */
-	err_t err = ERR_OK;
 	char buf[22];
 	isz len = 0;
 
@@ -112,7 +112,6 @@ isz
 fprintulb(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1  so at most 64 digits */
-	err_t err = ERR_OK;
 	char buf[65];
 	isz len = 0;
 
@@ -167,7 +166,6 @@ isz
 fprintulx(unsigned long ul, FILE ref file, err_t ref err_out)
 {
 	/* max int is 2^64-1  so at most 16 digits */
-	err_t err = ERR_OK;
 	char buf[17];
 	isz len = 0;
 
@@ -249,8 +247,6 @@ isz
 printp(const ptr p, err_t ref err_out)
 { return printuzx((usz)p, err_out); }
 
-#include "ministd_memory.h"
-
 char
 fscanc(FILE ref file, err_t ref err_out)
 {
@@ -262,8 +258,6 @@ fscans(FILE ref file, err_t ref err_out)
 	err_t err = ERR_OK;
 	char own result;
 	usz result_cap;
-	isz len = 0;
-	isz bytes_read;
 
 	result_cap = 128;
 	result = alloc(result_cap, &err);
