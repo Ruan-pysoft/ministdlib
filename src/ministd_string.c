@@ -287,12 +287,15 @@ struct StringFile {
 	usz content_len;
 };
 
-isz
+usz
 sf_read(StringFile ref file, ptr buf, usz cap, err_t ref err_out)
 {
 	char ref readtill;
 	char ref bufptr;
 	const char ref initial = file->s->ptr;
+
+	/* TODO: this function is almost certainly incorrect,
+	 * but I'm too tired to untangle it right now */
 
 	(void)err_out;
 
@@ -306,13 +309,13 @@ sf_read(StringFile ref file, ptr buf, usz cap, err_t ref err_out)
 
 	return file->s->ptr - initial;
 }
-isz
+usz
 sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
 	file->s = s_memappend(file->s, (char ref)buf, cap, &err);
-	TRY_WITH(err, -1);
+	TRY_WITH(err, 0);
 	if (file->s == 0) {
 		file->content_len = 0;
 		return -1;
@@ -331,10 +334,10 @@ sf_close(StringFile ref file, err_t ref err_out)
 	file->s = 0;
 	file->content_len = 0;
 }
-isz
+usz
 sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
 {
-	isz r;
+	usz r;
 	r = 0;
 
 	(void)file;

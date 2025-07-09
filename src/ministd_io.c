@@ -16,10 +16,10 @@ struct RAW_FILE {
 	int fd;
 };
 
-static isz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out);
-static isz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out);
+static usz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out);
+static usz raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out);
 static void raw_file_close(struct RAW_FILE ref this, err_t ref err_out);
-static isz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out);
+static usz raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out);
 static FILE raw_file_ptrs = {
 	(FILE_read_t)raw_file_read,   /* .read */
 	(FILE_write_t)raw_file_write, /* .write */
@@ -33,12 +33,12 @@ static struct RAW_FILE raw_stdin;
 static struct RAW_FILE raw_stdout;
 static struct RAW_FILE raw_stderr;
 
-static isz
+static usz
 raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	return fd_read(this->fd, buf, cap, err_out);
 }
-static isz
+static usz
 raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out)
 {
 	return fd_write(this->fd, buf, cap, err_out);
@@ -48,10 +48,10 @@ raw_file_close(struct RAW_FILE ref this, err_t ref err_out)
 {
 	fd_close(this->fd, err_out);
 }
-static isz
+static usz
 raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
 {
-	isz r = 0;
+	usz r = 0;
 
 	(void) this;
 	(void) err_out;
@@ -83,7 +83,7 @@ fd_open(const char ref path, err_t ref err_out)
 
 	return res;
 }
-isz
+usz
 fd_read(int fd, ptr buf, usz cap, err_t ref err_out)
 {
 	isz lfd, res;
@@ -92,12 +92,12 @@ fd_read(int fd, ptr buf, usz cap, err_t ref err_out)
 	_syscall3(__NR_read, res, lfd, buf, cap);
 
 	if (res < 0) {
-		ERR_WITH(-res, -1);
+		ERR_WITH(-res, 0);
 	}
 
-	return res;
+	return (usz)res;
 }
-isz
+usz
 fd_write(int fd, const ptr buf, usz cap, err_t ref err_out)
 {
 	isz lfd, res;
@@ -106,10 +106,10 @@ fd_write(int fd, const ptr buf, usz cap, err_t ref err_out)
 	_syscall3(__NR_write, res, lfd, buf, cap);
 
 	if (res < 0) {
-		ERR_WITH(-res, -1);
+		ERR_WITH(-res, 0);
 	}
 
-	return res;
+	return (usz)res;
 }
 void
 fd_close(int fd, err_t ref err_out)
@@ -146,7 +146,7 @@ from_fd(int fd, err_t ref err_out)
 
 	return (FILE own)res;
 }
-isz
+usz
 read(FILE ref file, ptr buf, usz cap, err_t ref err_out)
 {
 	if (!cap) return 0;
@@ -157,7 +157,7 @@ read(FILE ref file, ptr buf, usz cap, err_t ref err_out)
 	}
 	return file->read(file, buf, cap, err_out);
 }
-isz
+usz
 write(FILE ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	return file->write(file, buf, cap, err_out);
@@ -198,24 +198,19 @@ peekc(FILE ref file, err_t ref err_out)
 	return c;
 }
 
-isz
+usz
 fputs(const char ref str, FILE ref file, err_t ref err_out)
 {
 	const usz len = strlen(str);
 	err_t err = ERR_OK;
-	isz written = 0;
+	usz written = 0;
 
-	/* TODO: make write, read, etc return `usz` rather than `isz`,
-	 * since the result can only be positive,
-	 * as negative values are mapped to `err_t`
-	 * (tho in the case of error it should now return 0 rather than -1)
-	 */
-	while (written < (isz)len) {
+	while (written < len) {
 		isz bytes_written;
 
 		bytes_written = write(file, (ptr)(str + written), len - written, &err);
-		TRY_WITH(err, -1);
-		if (bytes_written == 0) ERR_WITH(ERR_IO, -1);
+		TRY_WITH(err, 0);
+		if (bytes_written == 0) ERR_WITH(ERR_IO, 0);
 
 		written += bytes_written;
 	}
@@ -225,31 +220,31 @@ fputs(const char ref str, FILE ref file, err_t ref err_out)
 int
 fputc(char c, FILE ref file, err_t ref err_out)
 {
-	isz bytes_written;
+	err_t err = ERR_OK;
+	usz bytes_written;
 
-	bytes_written = write(file, &c, 1, err_out);
+	bytes_written = write(file, &c, 1, &err);
+	TRY_WITH(err, 0);
 	if (bytes_written == 1) {
 		return c;
-	} else if (bytes_written >= 0) {
-		ERR_WITH(ERR_IO, -1);
 	} else {
-		return -1;
+		ERR_WITH(ERR_IO, 0);
 	}
 }
-isz
+usz
 puts(const char ref str, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	isz bytes_written;
+	usz bytes_written;
 
 	bytes_written = fputs(str, stdout, &err);
-	TRY_WITH(err, -1);
-	if (bytes_written >= 0 && fputc(10, stdout, err_out) == 10) {
+	TRY_WITH(err, 0);
+	if (fputc(10, stdout, &err) == 10) {
+		TRY_WITH(err, 0);
 		return bytes_written+1;
-	} else if (bytes_written >= 0) {
-		ERR_WITH(ERR_IO, -1);
 	} else {
-		return -1;
+		TRY_WITH(err, 0);
+		ERR_WITH(ERR_IO, 0);
 	}
 }
 int
@@ -378,10 +373,10 @@ struct BufferedFile {
 static BufferedFile own buffered_stdin;
 static BufferedFile own buffered_stdout;
 
-isz bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out);
-isz bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out);
+usz bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out);
+usz bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out);
 void bf_close(BufferedFile ref file, err_t ref err_out);
-isz bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out);
+usz bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out);
 FILE buffered_file_ptrs = {
 	(FILE_read_t)bf_read,   /* read */
 	(FILE_write_t)bf_write, /* write */
@@ -439,7 +434,7 @@ bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
 	return res;
 }
 
-isz
+usz
 bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
@@ -450,10 +445,10 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 	}
 
 	if (file->read_buf_pos == file->read_buf_end) {
-		isz bytes_read;
+		usz bytes_read;
 
 		bytes_read = read(file->raw, file->read_buf, file->read_cap, &err);
-		TRY_WITH(err, -1);
+		TRY_WITH(err, 0);
 
 		if (bytes_read == 0) return 0;
 
@@ -493,7 +488,7 @@ bf_flush(BufferedFile ref file, err_t ref err_out)
 	file->write_buf_pos = file->write_buf;
 	file->write_buf_end = file->write_buf;
 }
-isz
+usz
 bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
@@ -531,16 +526,16 @@ bf_close(BufferedFile ref file, err_t ref err_out)
 	free(file->write_buf);
 	close(file->raw, err_out);
 }
-isz
+usz
 bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	isz r = 0;
+	usz r = 0;
 
 	switch (op) {
 		case FO_FLUSH: {
 			bf_flush(file, &err);
-			TRY_WITH(err, -1);
+			TRY_WITH(err, 0);
 		break; }
 	}
 
@@ -574,23 +569,23 @@ ministd_io_cleanup(void)
 	 * during other cleanup rather difficult...
 	 */
 }
-static isz
+static usz
 stdin_read(struct BufferedFile ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	/* tie stdin to stdout -- TODO: Allow this with buffered files in general? */
 	err_t err = ERR_OK;
 
 	flush(stdout, &err);
-	TRY_WITH(err, -1);
+	TRY_WITH(err, 0);
 
 	return bf_read(this, buf, cap, err_out);
 }
-static isz
+static usz
 stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	/* tie stderr to stdout */
 	err_t err = ERR_OK;
-	isz res;
+	usz res;
 
 	flush(stdout, &err);
 	/* no TRY_WITH
@@ -598,6 +593,7 @@ stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 	 */
 
 	res = raw_file_write(this, buf, cap, err_out);
+	/* manual TRY_WITH here, if flush failed and write didn't */
 	if (err != ERR_OK && err_out != NULL && *err_out != ERR_OK) {
 		ERR_WITH(err, -1);
 	}
