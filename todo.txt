@@ -1,8 +1,5 @@
 memory efficiency: improve efficiency of memmove and memzero
 
-! Move over from sbrk to mmap
-	Maybe also use sbrk for small values?
-
 implement multithreading
 
 rethink strings.h
@@ -10,9 +7,11 @@ rethink strings.h
 Upgrade the test suite
 
 printf with floats
-printf with string type
 expand printf suite to have field width specifiers, etc
 	probably with some sort of fmt struct?
+
+? Support for format strings
+	Unsure how to have compile-time type safety...
 
 scanf with floats
 scanf with string type
