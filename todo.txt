@@ -26,3 +26,5 @@ expand scanf suite to restrict amount of characters it'll read from the input bu
 documentation
 
 Some static checks (eg. enforcing own/ref semantics)
+
+! Move todo's over to todo.sr.ht
