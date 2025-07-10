@@ -346,6 +346,12 @@ sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
 	switch (op) {
 		case FO_FLUSH: {
 		break; }
+		case FO_HASFD: {
+			r = false;
+		break; }
+		case FO_GETFD: {
+			ERR_WITH(ERR_BADF, 0);
+		break; }
 	}
 
 	return r;

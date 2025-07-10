@@ -5,7 +5,9 @@
 #include <ministd_error.h>
 
 enum FILE_OP {
-	FO_FLUSH
+	FO_FLUSH,
+	FO_HASFD,
+	FO_GETFD
 };
 
 struct FILE;
@@ -36,6 +38,7 @@ FILE own from_fd(int fd, err_t ref err_out);
 usz read(FILE ref file, ptr buf, usz cap, err_t ref err_out);
 usz write(FILE ref file, const ptr buf, usz cap, err_t ref err_out);
 void close(FILE ref file, err_t ref err_out);
+usz run_op(FILE ref file, enum FILE_OP op, err_t ref err_out);
 void flush(FILE ref file, err_t ref err_out);
 void ungetc(FILE ref file, char c, err_t ref err_out);
 int peekc(FILE ref file, err_t ref err_out);

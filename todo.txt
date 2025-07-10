@@ -1,7 +1,7 @@
 memory efficiency: improve efficiency of memmove and memzero
 
 ! implement multithreading
-	1. implement polling for FILE's with fd's
+	1. [DONE] implement polling for FILE's with fd's
 	2. implement `clone`
 	3. implement atomics, locks, and memory barriers
 	4. implement a threadpool interface

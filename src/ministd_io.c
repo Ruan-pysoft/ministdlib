@@ -60,6 +60,16 @@ raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
 		case FO_FLUSH: {
 			/* do nothing */
 		break; }
+		case FO_HASFD: {
+			r = true;
+		break; }
+		case FO_GETFD: {
+			if (this->fd < 0) {
+				ERR_WITH(ERR_BADF, 0);
+			} else {
+				r = this->fd;
+			}
+		break; }
 	}
 
 	return r;
@@ -167,10 +177,15 @@ close(FILE ref file, err_t ref err_out)
 {
 	file->close(file, err_out);
 }
+usz
+run_op(FILE ref file, enum FILE_OP op, err_t ref err_out)
+{
+	return file->run(file, op, err_out);
+}
 void
 flush(FILE ref file, err_t ref err_out)
 {
-	file->run(file, FO_FLUSH, err_out);
+	run_op(file, FO_FLUSH, err_out);
 }
 void
 ungetc(FILE ref file, char c, err_t ref err_out)
@@ -495,7 +510,7 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 
 	if ((char ref)file->write_buf_end + cap > (char ref)file->write_buf + file->write_cap) {
 		bf_flush(file, &err);
-		TRY_WITH(err, -1);
+		TRY_WITH(err, 0);
 
 		if (file->write_buf_pos < file->write_buf_end) {
 			return 0;
@@ -512,6 +527,13 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 	} else {
 		memmove(file->write_buf_end, buf, cap);
 		file->write_buf_end = (char ref)file->write_buf_end + cap;
+
+		/* flush on newline */
+		if (((char ref)file->write_buf_end)[-1] == '\n') {
+			bf_flush(file, &err);
+			TRY_WITH(err, 0);
+		}
+
 		return cap;
 	}
 }
@@ -537,6 +559,10 @@ bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out)
 			bf_flush(file, &err);
 			TRY_WITH(err, 0);
 		break; }
+		case FO_HASFD:
+		case FO_GETFD: {
+			return run_op(file->raw, op, err_out);
+		}
 	}
 
 	return r;
