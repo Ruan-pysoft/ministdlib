@@ -333,7 +333,7 @@ fgetline(char ref buf, usz cap, FILE ref file, err_t ref err_out)
 	usz len = 0;
 	isz bytes_read;
 
-	if (buf == NULL || cap == 0) return 0;
+	if (buf == NULL || cap == 0) return false;
 	if (cap == 1) {
 		*buf = 0;
 		return false;
