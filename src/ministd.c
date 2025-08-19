@@ -51,6 +51,15 @@ exit(int exitcode)
 		exithooks[i]();
 	}
 
+	_syscall1(__NR_exit_group, dummy, lcode);
+	__builtin_unreachable();
+}
+void
+thread_exit(int exitcode)
+{
+	isz lcode, dummy;
+	lcode = exitcode;
+
 	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();
 }

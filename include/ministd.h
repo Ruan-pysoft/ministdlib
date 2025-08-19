@@ -11,6 +11,7 @@ char ref ref envp(void);
 
 void atexit(void (ref func)(void));
 void exit(int exitcode);
+void thread_exit(int exitcode);
 void _start(void);
 
 #endif /* _RM_STD_H */
