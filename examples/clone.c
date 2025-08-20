@@ -14,12 +14,13 @@ own_ptr mmap(ptr addr, usz len, int prot, int flags, int fildes, usz off, err_t 
 void munmap(ptr addr, usz len, err_t ref err_out);
 
 int
-child_fn(int ref arg)
+child_fn(ptr void_arg)
 {
 	err_t err = ERR_OK;
-	ptr rsp;
+	int ref arg = void_arg;
+	ptr rbp;
 
-	__asm__ volatile("mov %%rsp, %[rsp]" : [rsp] "=r" (rsp));
+	__asm__ volatile("mov %%rbp, %[rbp]" : [rbp] "=r" (rbp));
 
 	fprints("Immediately in child!\n", stderr, &err);
 	if (err != ERR_OK) goto exit_error;
@@ -28,12 +29,11 @@ child_fn(int ref arg)
 
 	fprints("Child stack base at 0x", stderr, &err);
 	if (err != ERR_OK) goto exit_error;
-	fprintp(rsp, stderr, &err);
+	fprintp(rbp, stderr, &err);
 	if (err != ERR_OK) goto exit_error;
 	fprintc('\n', stderr, &err);
 	if (err != ERR_OK) goto exit_error;
 
-	if (err != ERR_OK) goto exit_error;
 	fprints("Doing child stuff after one second!\n", stderr, &err);
 	if (err != ERR_OK) goto exit_error;
 	*arg = 42;
@@ -45,7 +45,7 @@ exit_error:
 }
 
 void
-forklike_demo(err_t ref err_out)
+process_demo(err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	struct clone_args cl_args = {
@@ -61,7 +61,7 @@ forklike_demo(err_t ref err_out)
 		0, /* set_tid_size */
 		0 /* cgroup */
 	};
-	usz cl_res;
+	usz pid;
 	int own shared = mmap(
 		NULL,
 		sizeof(int),
@@ -73,22 +73,16 @@ forklike_demo(err_t ref err_out)
 	);
 	TRY_VOID(err);
 
-	fprints("Running fork-like clone test!\n", stderr, &err);
+	fprints("Running process clone test!\n", stderr, &err);
 	TRY_VOID(err);
 
-	cl_res = _raw_clone(&cl_args, &err);
+	pid = clone(&child_fn, shared, &cl_args, &err);
 	TRY_VOID(err);
 
-	if (cl_res == 0) {
-		/* in child */
-		exit(child_fn(shared));
-	}
-
-	/* in parent (cl_res != 0) */
 	fprints("Immediately in parent!\n", stderr, NULL);
 
 	fprints("Child PID = ", stderr, NULL);
-	fprintuz(cl_res, stderr, NULL);
+	fprintuz(pid, stderr, NULL);
 	fprintc('\n', stderr, NULL);
 
 	fprints("Shared value = ", stderr, NULL);
@@ -107,7 +101,7 @@ forklike_demo(err_t ref err_out)
 }
 
 void
-clonelike_demo(err_t ref err_out)
+thread_demo(err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	struct clone_args cl_args = {
@@ -123,13 +117,13 @@ clonelike_demo(err_t ref err_out)
 		0, /* set_tid_size */
 		0 /* cgroup */
 	};
-	isz cl_res;
+	isz pid;
 	int own shared;
 	own_ptr stack;
 
 	shared = alloc(sizeof(int), &err);
 	TRY_VOID(err);
-	stack = alloc(CHILD_STACK_SZ, &err);
+	stack = alloc(CHILD_STACK_SZ + 16, &err);
 	TRY_VOID(err);
 
 	fprints("Allocated child stack at 0x", stderr, &err);
@@ -139,27 +133,20 @@ clonelike_demo(err_t ref err_out)
 	fprintc('\n', stderr, &err);
 	TRY_VOID(err);
 
-	cl_args.flags = CLONE_VM | CLONE_FILES | CLONE_FS | CLONE_IO | CLONE_SIGHAND | CLONE_SYSVSEM;
+	cl_args.flags = CLONE_VM | CLONE_THREAD | CLONE_FILES | CLONE_FS | CLONE_IO | CLONE_SIGHAND | CLONE_SYSVSEM;
 	cl_args.stack = (usz)stack;
 	cl_args.stack_size = CHILD_STACK_SZ;
 
-	fprints("Running clone-like clone test!\n", stderr, &err);
+	fprints("Running thread clone test!\n", stderr, &err);
 	TRY_VOID(err);
 
-	_syscall_clone3(cl_res, &cl_args);
-	if (cl_res < 0) err = -cl_res;
+	pid = clone(child_fn, shared, &cl_args, &err);
 	TRY_VOID(err);
 
-	if (cl_res == 0) {
-		/* in child */
-		thread_exit(child_fn(shared));
-	}
-
-	/* in parent (cl_res != 0) */
 	fprints("Immediately in parent!\n", stderr, NULL);
 
 	fprints("Child PID = ", stderr, NULL);
-	fprintuz(cl_res, stderr, NULL);
+	fprintuz(pid, stderr, NULL);
 	fprintc('\n', stderr, NULL);
 
 	fprints("Shared value = ", stderr, NULL);
@@ -182,12 +169,12 @@ int
 main(void)
 {
 	err_t err = ERR_OK;
-	ptr rsp;
+	ptr rbp;
 
-	__asm__ volatile("mov %%rsp, %[rsp]" : [rsp] "=r" (rsp));
+	__asm__ volatile("mov %%rbp, %[rbp]" : [rbp] "=r" (rbp));
 
 	fprints("Parent stack base at 0x", stderr, &err);
-	fprintp(rsp, stderr, &err);
+	fprintp(rbp, stderr, &err);
 	fprintc('\n', stderr, &err);
 	if (err != ERR_OK) {
 		perror(err, "Error while printing stack base address");
@@ -200,9 +187,9 @@ main(void)
 		exit(-1);
 	}
 
-	forklike_demo(&err);
+	process_demo(&err);
 	if (err != ERR_OK) {
-		perror(err, "Error in fork-like demo");
+		perror(err, "Error in process demo");
 		exit(-1);
 	}
 
@@ -212,9 +199,9 @@ main(void)
 		exit(-1);
 	}
 
-	clonelike_demo(&err);
+	thread_demo(&err);
 	if (err != ERR_OK) {
-		perror(err, "Error in clone-like demo");
+		perror(err, "Error in thread demo");
 		exit(-1);
 	}
 

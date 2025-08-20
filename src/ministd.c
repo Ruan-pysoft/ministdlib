@@ -107,7 +107,7 @@ _start(void)
 void
 __stack_chk_fail(void)
 {
-	const char msg[] = "Stack smashing detected!";
+	const char msg[] = "Stack smashing detected!\n";
 
 	fd_write(2 /* stderr */, (ptr)msg, sizeof(msg)/sizeof(*msg), NULL);
 	exit(127);
