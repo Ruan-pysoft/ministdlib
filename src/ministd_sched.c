@@ -4,7 +4,7 @@
 #include <ministd_syscall.h>
 
 static usz
-clone_thread(int (*fn)(ptr), ptr arg, struct clone_args *cl_args, err_t ref err_out)
+clone_thread(int (ref fn)(ptr), ptr arg, struct clone_args ref cl_args, err_t ref err_out)
 {
 	/*register isz cl_res;
 
@@ -89,7 +89,7 @@ clone_thread(int (*fn)(ptr), ptr arg, struct clone_args *cl_args, err_t ref err_
 	return (usz) res;
 }
 static usz
-clone_process(int (*fn)(ptr), ptr arg, struct clone_args *cl_args, err_t ref err_out)
+clone_process(int (ref fn)(ptr), ptr arg, struct clone_args ref cl_args, err_t ref err_out)
 {
 	isz cl_res;
 
@@ -106,7 +106,7 @@ clone_process(int (*fn)(ptr), ptr arg, struct clone_args *cl_args, err_t ref err
 }
 
 usz
-clone(int (*fn)(ptr), ptr arg, struct clone_args *cl_args, err_t ref err_out)
+clone(int (ref fn)(ptr), ptr arg, struct clone_args ref cl_args, err_t ref err_out)
 {
 	if (cl_args->flags & CLONE_VM) {
 		return clone_thread(fn, arg, cl_args, err_out);
