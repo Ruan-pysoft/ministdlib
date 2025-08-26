@@ -15,15 +15,15 @@ struct AtomicC;
 struct AtomicUC;
 struct AtomicH;
 struct AtomicUH;
-struct AtomicL;
-struct AtomicUL;
 struct AtomicI;
 struct AtomicUI;
+struct AtomicL;
+struct AtomicUL;
 struct AtomicZ;
 struct AtomicUZ;
 
 #define ATOMIC_FN0_DECL(name) \
-	char atomic_ ## name ## _c(volatile struct AtomicC ref this, enum memory_order order); \
+	signed char atomic_ ## name ## _c(volatile struct AtomicC ref this, enum memory_order order); \
 	unsigned char atomic_ ## name ## _uc(volatile struct AtomicUC ref this, enum memory_order order); \
 	short atomic_ ## name ## _h(volatile struct AtomicH ref this, enum memory_order order); \
 	unsigned short atomic_ ## name ## _uh(volatile struct AtomicUH ref this, enum memory_order order); \
@@ -45,7 +45,7 @@ struct AtomicUZ;
 	void atomic_ ## name ## _z(volatile struct AtomicZ ref this, enum memory_order order); \
 	void atomic_ ## name ## _uz(volatile struct AtomicUZ ref this, enum memory_order order)
 #define ATOMIC_FN1_DECL(name) \
-	char atomic_ ## name ## _c(volatile struct AtomicC ref this, char val, enum memory_order order); \
+	signed char atomic_ ## name ## _c(volatile struct AtomicC ref this, signed char val, enum memory_order order); \
 	unsigned char atomic_ ## name ## _uc(volatile struct AtomicUC ref this, unsigned char val, enum memory_order order); \
 	short atomic_ ## name ## _h(volatile struct AtomicH ref this, short val, enum memory_order order); \
 	unsigned short atomic_ ## name ## _uh(volatile struct AtomicUH ref this, unsigned short val, enum memory_order order); \
@@ -56,7 +56,7 @@ struct AtomicUZ;
 	isz atomic_ ## name ## _z(volatile struct AtomicZ ref this, isz val, enum memory_order order); \
 	usz atomic_ ## name ## _uz(volatile struct AtomicUZ ref this, usz val, enum memory_order order)
 #define ATOMIC_FN1_VOID_DECL(name) \
-	void atomic_ ## name ## _c(volatile struct AtomicC ref this, char val, enum memory_order order); \
+	void atomic_ ## name ## _c(volatile struct AtomicC ref this, signed char val, enum memory_order order); \
 	void atomic_ ## name ## _uc(volatile struct AtomicUC ref this, unsigned char val, enum memory_order order); \
 	void atomic_ ## name ## _h(volatile struct AtomicH ref this, short val, enum memory_order order); \
 	void atomic_ ## name ## _uh(volatile struct AtomicUH ref this, unsigned short val, enum memory_order order); \
@@ -79,17 +79,17 @@ ATOMIC_FN1_DECL(fetch_max);
 ATOMIC_FN1_DECL(fetch_min);
 
 #define ATOMIC_CMP_EXCH_DECL(fn_suffix, atomic_suffix, type) \
-	bool atomic_compare_exchange_ ## fn_suffix(volatile struct Atomic ## atomic_suffix, type ref old, type new, enum memory_order order)
-ATOMIC_CMP_EXCH_DECL(c, C, char);
+	bool atomic_compare_exchange_ ## fn_suffix(volatile struct Atomic ## atomic_suffix ref this, type ref old, type new, enum memory_order order)
+ATOMIC_CMP_EXCH_DECL(c, C, signed char);
 ATOMIC_CMP_EXCH_DECL(uc, UC, unsigned char);
-ATOMIC_CMP_EXCH_DECL(h, H, char);
-ATOMIC_CMP_EXCH_DECL(uh, UH, unsigned char);
-ATOMIC_CMP_EXCH_DECL(i, I, char);
-ATOMIC_CMP_EXCH_DECL(ui, UI, unsigned char);
-ATOMIC_CMP_EXCH_DECL(l, L, char);
-ATOMIC_CMP_EXCH_DECL(ul, UL, unsigned char);
-ATOMIC_CMP_EXCH_DECL(z, Z, char);
-ATOMIC_CMP_EXCH_DECL(uz, UZ, unsigned char);
+ATOMIC_CMP_EXCH_DECL(h, H, short);
+ATOMIC_CMP_EXCH_DECL(uh, UH, unsigned short);
+ATOMIC_CMP_EXCH_DECL(i, I, int);
+ATOMIC_CMP_EXCH_DECL(ui, UI, unsigned int);
+ATOMIC_CMP_EXCH_DECL(l, L, long);
+ATOMIC_CMP_EXCH_DECL(ul, UL, unsigned long);
+ATOMIC_CMP_EXCH_DECL(z, Z, isz);
+ATOMIC_CMP_EXCH_DECL(uz, UZ, usz);
 #undef ATOMIC_CMP_EXCH_DECL
 
 #undef ATOMIC_FN1_VOID_DECL
