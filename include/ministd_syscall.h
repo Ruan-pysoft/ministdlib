@@ -11,28 +11,28 @@
 		"syscall;" \
 		: "=a" (out) \
 		: "0" ((usz)n) \
-		: "rcx", "r11" /* clobber */ \
+		: "rcx", "r11", "memory" /* clobber */ \
 	)
 #define _syscall1(n, out, arg1) \
 	__asm__ volatile( \
 		"syscall;" \
 		: "=a" (out) \
 		: "0" ((usz)n), [a1] "D" (arg1) \
-		: "rcx", "r11", "rdi" /* clobber */ \
+		: "rcx", "r11", "memory" /* clobber */ \
 	)
 #define _syscall2(n, out, arg1, arg2) \
 	__asm__ volatile( \
 		"syscall;" \
 		: "=a" (out) \
 		: "0" ((usz)n), [a1] "D" (arg1), [a2] "S" (arg2) \
-		: "rcx", "r11" /* clobber */ \
+		: "rcx", "r11", "memory" /* clobber */ \
 	)
 #define _syscall3(n, out, arg1, arg2, arg3) \
 	__asm__ volatile( \
 		"syscall;" \
 		: "=a" (out) \
 		: "0" ((usz)n), [a1] "D" (arg1), [a2] "S" (arg2), "d" (arg3) \
-		: "rcx", "r11" /* clobber */ \
+		: "rcx", "r11", "memory" /* clobber */ \
 	)
 #define _syscall4(n, out, arg1, arg2, arg3, arg4) do { \
 		register usz a4 __asm__("r10") = arg4; \
@@ -41,7 +41,7 @@
 			: "=a" (out) \
 			: "0" ((usz)n), [a1] "D" (arg1), [a2] "S" (arg2), "d" (arg3), \
 			  [a4] "r" (a4) \
-			: "rcx", "r11" /* clobber */ \
+			: "rcx", "r11", "memory" /* clobber */ \
 		); \
 	} while (0)
 #define _syscall5(n, out, arg1, arg2, arg3, arg4, arg5) do { \
@@ -52,7 +52,7 @@
 			: "=a" (out) \
 			: "0" ((usz)n), [a1] "D" (arg1), [a2] "S" (arg2), "d" (arg3), \
 			  [a4] "r" (a4), [a5] "r" (a5) \
-			: "rcx", "r11" /* clobber */ \
+			: "rcx", "r11", "memory" /* clobber */ \
 		); \
 	} while (0)
 #define _syscall6(n, out, arg1, arg2, arg3, arg4, arg5, arg6) do { \
@@ -64,7 +64,7 @@
 			: "=a" (out) \
 			: "0" ((usz)n), [a1] "D" (arg1), [a2] "S" (arg2), "d" (arg3), \
 			  [a4] "r" (a4), [a5] "r" (a5), [a6] "r" (a6) \
-			: "rcx", "r11" /* clobber */ \
+			: "rcx", "r11", "memory" /* clobber */ \
 		); \
 	} while (0)
 

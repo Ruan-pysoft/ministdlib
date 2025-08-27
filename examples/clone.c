@@ -26,6 +26,7 @@ child_fn(ptr void_arg)
 	if (err != ERR_OK) goto exit_error;
 
 	sleep(1, &err);
+	if (err != ERR_OK) goto exit_error;
 
 	fprints("Child stack base at 0x", stderr, &err);
 	if (err != ERR_OK) goto exit_error;
