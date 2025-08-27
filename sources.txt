@@ -1,6 +1,7 @@
 inline assembly -- A Practical Guide to GCC Inline Assembly -- https://blog.alex.balgavy.eu/a-practical-guide-to-gcc-inline-assembly/
 syscalls -- Linux System Call Table for x86 64 -- https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
 syscalls -- x86 Assembly/Interfacing with Linux -- https://en.wikibooks.org/wiki/X86_Assembly/Interfacing_with_Linux
+local register variables -- https://gcc.gnu.org/onlinedocs/gcc/Local-Register-Variables.html
 memory allocators -- Memory Allocators 101 - Write a simple memory allocator -- https://arjunsreedharan.org/post/148675821737
 inline assembly -- How to Use Inline Assembly Language in C Code -- https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html
 suggestions/inspiration -- Re-designing the standard library -- https://www.reddit.com/r/C_Programming/comments/feduq2
