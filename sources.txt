@@ -8,3 +8,5 @@ plan9 manpages -- plan 9 - 2 -- https://man.cat-v.org/plan_9/2/
 	especially string.h -- string -- https://man.cat-v.org/plan_9/2/string
 brainstorming using chatgpt -- https://chatgpt.com/share/685b0e46-503c-8012-919d-b427104c1e9b
 ansi escape codes -- https://en.wikipedia.org/wiki/ANSI_escape_code#Control_Sequence_Introducer_commands
+specifying register constraints for x86_64 -- https://stackoverflow.com/a/31774784
+musl's syscall implementation -- https://git.musl-libc.org/cgit/musl/tree/arch/x86_64/syscall_arch.h
