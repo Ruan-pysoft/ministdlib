@@ -187,14 +187,10 @@ atomic_compare_exchange_c(volatile struct AtomicC ref this, signed char ref old,
 
 	__asm__ volatile(
 		"lock cmpxchg %[new], (%[atomic])\n"
-		"jz .true_%=\n"
-		"mov $0, %[res]\n"
-		"jmp .end_%=\n"
-		".true_%=:\n"
-		"mov $1, %[res]\n"
-		".end_%=:\n"
+		"setz %b[res]\n"
+		"movzx %b[res], %[res]\n"
 		: [expected] "+a" (*old),
-		  [res] "=g" (res)
+		  [res] "=r" (res)
 		: [atomic] "g" (&this->val), [new] "d" (new)
 		: "memory"
 	);
