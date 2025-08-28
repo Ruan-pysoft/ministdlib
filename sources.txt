@@ -11,6 +11,9 @@ inline assembly -- A Practical Guide to GCC Inline Assembly -- https://blog.alex
 syscalls -- Linux System Call Table for x86 64 -- https://blog.rchapman.org/posts/Linux_System_Call_Table_for_x86_64/
 syscalls -- x86 Assembly/Interfacing with Linux -- https://en.wikibooks.org/wiki/X86_Assembly/Interfacing_with_Linux
 inline assembly -- How to Use Inline Assembly Language in C Code -- https://gcc.gnu.org/onlinedocs/gcc/Using-Assembly-Language-with-C.html
+local register variables -- https://gcc.gnu.org/onlinedocs/gcc/Local-Register-Variables.html
+specifying register constraints for x86_64 -- https://stackoverflow.com/a/31774784
+musl's syscall implementation -- https://git.musl-libc.org/cgit/musl/tree/arch/x86_64/syscall_arch.h
 
 = Memory Management =
 
