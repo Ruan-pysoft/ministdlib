@@ -4,6 +4,35 @@
 #include <ministd_io.h>
 #include <ministd_memory.h>
 
+/* define print* functions, alias to fprint*(..., stdout, ...) */
+#define X(suff, type) \
+	isz \
+	print ## suff(type suff, err_t ref err_out) \
+	{ return fprint ## suff(suff, stdout, err_out); }
+LIST_OF_FMTTYPES_NUMERIC
+LIST_OF_FMTTYPES_SPECIAL_PRINT
+#undef X
+
+/* define print* functions for hex and binary, alias to fprint*(..., stdout, ...) */
+#define X(suff, type) \
+	isz \
+	print ## suff ## x(type suff, err_t ref err_out) \
+	{ return fprint ## suff ## x(suff, stdout, err_out); } \
+	isz \
+	print ## suff ## b(type suff, err_t ref err_out) \
+	{ return fprint ## suff ## b(suff, stdout, err_out); }
+LIST_OF_FMTTYPES_NUMERIC
+#undef X
+
+/* define scan* functions, alias to fscan*(stdin, ...) */
+#define X(suff, type) \
+	type \
+	scan ## suff(err_t ref err_out) \
+	{ return fscan ## suff(stdin, err_out); }
+LIST_OF_FMTTYPES_NUMERIC
+LIST_OF_FMTTYPES_SPECIAL_SCAN
+#undef X
+
 isz
 fprintc(char c, FILE ref file, err_t ref err_out)
 {
@@ -17,12 +46,6 @@ fprints(const char ref s, FILE ref file, err_t ref err_out)
 {
 	return fputs(s, file, err_out);
 }
-isz
-printc(char c, err_t ref err_out)
-{ return fprintc(c, stdout, err_out); }
-isz
-prints(const char ref s, err_t ref err_out)
-{ return fprints(s, stdout, err_out); }
 
 isz
 fprintl(long l, FILE ref file, err_t ref err_out)
@@ -184,24 +207,6 @@ fprintulx(unsigned long ul, FILE ref file, err_t ref err_out)
 
 	return fputs(buf+16-len, file, err_out);
 }
-isz
-printl(long l, err_t ref err_out)
-{ return fprintl(l, stdout, err_out); }
-isz
-printul(unsigned long ul, err_t ref err_out)
-{ return fprintul(ul, stdout, err_out); }
-isz
-printlb(long l, err_t ref err_out)
-{ return fprintlb(l, stdout, err_out); }
-isz
-printulb(unsigned long ul, err_t ref err_out)
-{ return fprintulb(ul, stdout, err_out); }
-isz
-printlx(long l, err_t ref err_out)
-{ return fprintlx(l, stdout, err_out); }
-isz
-printulx(unsigned long ul, err_t ref err_out)
-{ return fprintulx(ul, stdout, err_out); }
 
 #define FPRINT_RAW_S_IMPL(type, suffix) \
 	isz fprint##suffix(type suffix, FILE ref file, err_t ref err_out) \
@@ -209,43 +214,30 @@ printulx(unsigned long ul, err_t ref err_out)
 	isz fprint##suffix##b(type suffix, FILE ref file, err_t ref err_out) \
 	{ return fprintlb((long)suffix, file, err_out); } \
 	isz fprint##suffix##x(type suffix, FILE ref file, err_t ref err_out) \
-	{ return fprintlx((long)suffix, file, err_out); } \
-	isz print##suffix(type suffix, err_t ref err_out) \
-	{ return printl((long)suffix, err_out); } \
-	isz print##suffix##b(type suffix, err_t ref err_out) \
-	{ return printl((long)suffix, err_out); } \
-	isz print##suffix##x(type suffix, err_t ref err_out) \
-	{ return printl((long)suffix, err_out); }
+	{ return fprintlx((long)suffix, file, err_out); }
 #define FPRINT_RAW_U_IMPL(type, suffix) \
 	isz fprint##suffix(type suffix, FILE ref file, err_t ref err_out) \
 	{ return fprintul((unsigned long)suffix, file, err_out); } \
 	isz fprint##suffix##b(type suffix, FILE ref file, err_t ref err_out) \
 	{ return fprintulb((unsigned long)suffix, file, err_out); } \
 	isz fprint##suffix##x(type suffix, FILE ref file, err_t ref err_out) \
-	{ return fprintulx((unsigned long)suffix, file, err_out); } \
-	isz print##suffix(type suffix, err_t ref err_out) \
-	{ return printul((unsigned long)suffix, err_out); } \
-	isz print##suffix##b(type suffix, err_t ref err_out) \
-	{ return printul((unsigned long)suffix, err_out); } \
-	isz print##suffix##x(type suffix, err_t ref err_out) \
-	{ return printul((unsigned long)suffix, err_out); }
+	{ return fprintulx((unsigned long)suffix, file, err_out); }
 #define FPRINT_IMPL(type, suffix) \
 	FPRINT_RAW_S_IMPL(type, suffix) \
 	FPRINT_RAW_U_IMPL(unsigned type, u##suffix)
 
-FPRINT_RAW_S_IMPL(isz, z)
-FPRINT_RAW_U_IMPL(usz, uz)
+FPRINT_IMPL(short, h)
 
 FPRINT_IMPL(int, i)
 
-FPRINT_IMPL(short, h)
+/* TODO: Pretty sure this is incorrect; long being smaller than isz/usz? */
+
+FPRINT_RAW_S_IMPL(isz, z)
+FPRINT_RAW_U_IMPL(usz, uz)
 
 isz
 fprintp(const ptr p, FILE ref file, err_t ref err_out)
 { return fprintuzx((usz)p, file, err_out); }
-isz
-printp(const ptr p, err_t ref err_out)
-{ return printuzx((usz)p, err_out); }
 
 char
 fscanc(FILE ref file, err_t ref err_out)
@@ -282,7 +274,11 @@ fscans(FILE ref file, err_t ref err_out)
 		result_cap *= 2;
 	}
 }
-#define INTSCAN(type) do {                                           \
+
+#define X(suff, type)                                                \
+	type                                                         \
+	fscan ## suff(FILE ref file, err_t ref err_out)              \
+	{                                                            \
 		err_t err = ERR_OK;                                  \
 		char c;                                              \
 		type res = 0;                                        \
@@ -314,44 +310,6 @@ fscans(FILE ref file, err_t ref err_out)
 		}                                                    \
                                                                      \
 		return res;                                          \
-	} while (0)
-long
-fscanl(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(signed long);
-}
-unsigned long
-fscanul(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(unsigned long);
-}
-isz
-fscanz(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(isz);
-}
-usz
-fscanuz(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(usz);
-}
-int
-fscani(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(signed int);
-}
-unsigned int
-fscanu(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(unsigned int);
-}
-short
-fscanh(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(signed short);
-}
-unsigned short
-fscanuh(FILE ref file, err_t ref err_out)
-{
-	INTSCAN(unsigned short);
-}
+	}
+LIST_OF_FMTTYPES_NUMERIC
+#undef X

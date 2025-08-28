@@ -5,58 +5,46 @@
 #include <ministd_io.h>
 #include <ministd_types.h>
 
-#define FPRINT_RAW_DECL(type, suffix) \
-	isz fprint##suffix(type suffix, FILE ref file, err_t ref err_out); \
-	isz fprint##suffix##b(type suffix, FILE ref file, err_t ref err_out); \
-	isz fprint##suffix##x(type suffix, FILE ref file, err_t ref err_out); \
-	isz print##suffix(type suffix, err_t ref err_out); \
-	isz print##suffix##b(type suffix, err_t ref err_out); \
-	isz print##suffix##x(type suffix, err_t ref err_out)
+#define LIST_OF_FMTTYPES_NUMERIC \
+	X(h, short) \
+	X(uh, unsigned short) \
+	X(i, int) \
+	X(ui, unsigned int) \
+	X(l, long) \
+	X(ul, unsigned long) \
+	X(z, isz) \
+	X(uz, usz)
+#define LIST_OF_FMTTYPES_SPECIAL_PRINT \
+	X(s, const char ref) \
+	X(c, char) \
+	X(p, const ptr)
+#define LIST_OF_FMTTYPES_SPECIAL_SCAN \
+	X(s, char ref) \
+	X(c, char)
 
-#define FPRINT_DECL(type, suffix) \
-	FPRINT_RAW_DECL(type, suffix); \
-	FPRINT_RAW_DECL(unsigned type, u##suffix)
+/* basic fprint* and print* function declarations */
+#define X(suff, type) \
+	isz fprint ## suff(type suff, FILE ref file, err_t ref err_out); \
+	isz print ## suff(type suff, err_t ref err_out);
+LIST_OF_FMTTYPES_NUMERIC
+LIST_OF_FMTTYPES_SPECIAL_PRINT
+#undef X
 
-isz fprintc(char c, FILE ref file, err_t ref err_out);
-isz fprints(const char ref s, FILE ref file, err_t ref err_out);
-isz printc(char c, err_t ref err_out);
-isz prints(const char ref s, err_t ref err_out);
+/* function declarations for hexadecimal and binary printing */
+#define X(suff, type) \
+	isz fprint ## suff ## b(type suff, FILE ref file, err_t ref err_out); \
+	isz fprint ## suff ## x(type suff, FILE ref file, err_t ref err_out); \
+	isz print ## suff ## b(type suff, err_t ref err_out); \
+	isz print ## suff ## x(type suff, err_t ref err_out);
+LIST_OF_FMTTYPES_NUMERIC
+#undef X
 
-FPRINT_DECL(long, l);
-
-FPRINT_RAW_DECL(isz, z);
-FPRINT_RAW_DECL(usz, uz);
-
-FPRINT_DECL(int, i);
-
-FPRINT_DECL(short, h);
-
-isz fprintp(const ptr p, FILE ref file, err_t ref err_out);
-isz printp(const ptr p, err_t ref err_out);
-
-#undef FPRINT_DECL
-#undef FPRINT_RAW_DECL
-
-char fscanc(FILE ref file, err_t ref err_out);
-char own fscans(FILE ref file, err_t ref err_out);
-long fscanl(FILE ref file, err_t ref err_out);
-unsigned long fscanul(FILE ref file, err_t ref err_out);
-isz fscanz(FILE ref file, err_t ref err_out);
-usz fscanuz(FILE ref file, err_t ref err_out);
-int fscani(FILE ref file, err_t ref err_out);
-unsigned int fscanu(FILE ref file, err_t ref err_out);
-short fscanh(FILE ref file, err_t ref err_out);
-unsigned short fscanuh(FILE ref file, err_t ref err_out);
-
-#define scanc(err_out)	fscanc(stdin, err_out)
-#define scans(err_out)	fscans(stdin, err_out)
-#define scanl(err_out)	fscanl(stdin, err_out)
-#define scanul(err_out)	fscanul(stdin, err_out)
-#define scanz(err_out)	fscanz(stdin, err_out)
-#define scanuz(err_out)	fscanuz(stdin, err_out)
-#define scani(err_out)	fscani(stdin, err_out)
-#define scanu(err_out)	fscanu(stdin, err_out)
-#define scanh(err_out)	fscanh(stdin, err_out)
-#define scanuh(err_out)	fscanuh(stdin, err_out)
+/* function declarations for fscan* and scan* functions */
+#define X(suff, type) \
+	type fscan ## suff(FILE ref file, err_t ref err_out); \
+	type scan ## suff(err_t ref err_out);
+LIST_OF_FMTTYPES_NUMERIC
+LIST_OF_FMTTYPES_SPECIAL_SCAN
+#undef X
 
 #endif /* _RM_STD_FMT_H */
