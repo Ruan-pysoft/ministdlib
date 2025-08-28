@@ -10,11 +10,11 @@
 #define N_THREADS 63
 
 int thread_fn(void ref arg) {
-	struct AtomicC ref atomic_arg = arg;
+	struct AtomicI ref counter = arg;
 	usz i;
 
 	for (i = 0; i < N_ITERS; ++i) {
-		atomic_fetch_add_c(atomic_arg, 1, MO_STRICT);
+		atomic_fetch_add_i(counter, 1, MO_STRICT);
 	}
 
 	return 0;
@@ -26,18 +26,20 @@ const char lowercase_bit = 'a'^'A';
 #define print(sort, val) fprint ## sort(val, stdout, NULL)
 
 int main(void) {
-	struct AtomicC own val = atomic_new_c(0, NULL);
+	struct AtomicC own ch = atomic_new_c(0, NULL);
+	struct AtomicI own counter = atomic_new_i(0, NULL);
 	struct clone_args cl_args = { 0 };
 	usz i;
 	char c;
+	int num;
 
 	for (i = 0; true; ++i) {
-		atomic_store_c(val, MSG_LOWER[i], MO_STRICT);
+		atomic_store_c(ch, MSG_LOWER[i], MO_STRICT);
 
 		if (MSG_LOWER[i] >= 'a' && MSG_LOWER[i] <= 'z') {
-			c = atomic_fetch_and_c(val, ~lowercase_bit, MO_STRICT);
+			c = atomic_fetch_and_c(ch, ~lowercase_bit, MO_STRICT);
 		} else {
-			c = atomic_load_c(val, MO_STRICT);
+			c = atomic_load_c(ch, MO_STRICT);
 		}
 		if (c != MSG_LOWER[i]) {
 			print(s, "Wrong value stored in atomic!\n");
@@ -49,7 +51,7 @@ int main(void) {
 			return 1;
 		}
 
-		c = atomic_load_c(val, MO_STRICT);
+		c = atomic_load_c(ch, MO_STRICT);
 		putc(c, NULL);
 
 		if (c == '\0') break;
@@ -62,17 +64,17 @@ int main(void) {
 		cl_args.stack = (usz)stack;
 		cl_args.stack_size = 256;
 
-		clone(thread_fn, val, &cl_args, NULL);
+		clone(thread_fn, counter, &cl_args, NULL);
 	}
 
 	sleep(1, NULL);
 
-	c = atomic_load_c(val, MO_STRICT);
+	num = atomic_load_i(counter, MO_STRICT);
 
 	print(s, "Expecting value ");
-	print(i, (N_ITERS * N_THREADS) % 256);
+	print(i, N_ITERS * N_THREADS);
 	print(s, ", got ");
-	print(i, (unsigned char)c);
+	print(i, num);
 	print(c, '\n');
 
 	return 0;

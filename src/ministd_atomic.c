@@ -2,201 +2,163 @@
 
 #include <ministd_memory.h>
 
-struct AtomicC {
-	signed char val;
-};
-struct AtomicUC {
-	unsigned char val;
-};
-struct AtomicH {
-	short val;
-};
-struct AtomicUH {
-	unsigned short val;
-};
-struct AtomicI {
-	int val;
-};
-struct AtomicUI {
-	unsigned int val;
-};
-struct AtomicL {
-	long val;
-};
-struct AtomicUL {
-	unsigned long val;
-};
-struct AtomicZ {
-	isz val;
-};
-struct AtomicUZ {
-	usz val;
-};
+#define X(SUFF, suff, type) struct Atomic ## SUFF { type val; };
+LIST_OF_ATOMICS
+#undef X
 
-struct AtomicC own
-atomic_new_c(signed char val, err_t ref err_out)
-{
-	err_t err = ERR_OK;
-	struct AtomicC own res;
+#define X(SUFF, suff, type) \
+	struct Atomic ## SUFF own \
+	atomic_new_ ## suff(type val, err_t ref err_out) \
+	{ \
+		err_t err = ERR_OK; \
+		struct Atomic ## SUFF own res; \
+		res = alloc(sizeof(*res), &err); \
+		TRY_WITH(err, NULL); \
+		res->val = val; \
+		return res; \
+	}
+LIST_OF_ATOMICS
+#undef X
 
-	res = alloc(sizeof(*res), &err);
-	TRY_WITH(err, NULL);
-
-	res->val = val;
-
-	return res;
-}
-
-signed char
-atomic_load_c(volatile struct AtomicC ref this, enum memory_order order)
-{
-	signed char res;
-
-	(void) order;
-
-	__asm__ volatile(
-		"mov (%[atomic]), %[res]"
-		: [res] "=g" (res)
-		: [atomic] "g" (&this->val)
-		: "memory"
-	);
-
-	return res;
-}
-
-void
-atomic_store_c(volatile struct AtomicC ref this, signed char val,
-	       enum memory_order order)
-{
-	(void) order;
-
-	__asm__ volatile(
-		"mov %[val], (%[atomic])"
-		:
-		: [atomic] "g" (&this->val), [val] "a" (val)
-		: "memory"
-	);
-}
-
-#define LOCKED_BODY(type, instr) do { \
-		type res = val; \
+#define X(SUFF, suff, type) \
+	type \
+	atomic_load_ ## suff(volatile struct Atomic ## SUFF ref this, enum memory_order order) \
+	{ \
+		type res; \
 		(void) order; \
 		__asm__ volatile( \
-			"lock " instr " %[res], (%[atomic])" \
+			"mov (%[atomic]), %[res]" \
+			: [res] "=g" (res) \
+			: [atomic] "g" (&this->val) \
+			: "memory" \
+		); \
+		return res; \
+	}
+LIST_OF_ATOMICS
+#undef X
+
+#define X(SUFF, suff, type) \
+	void \
+	atomic_store_ ## suff(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
+	{ \
+		(void) order; \
+		__asm__ volatile( \
+			"mov %[val], (%[atomic])" \
+			: \
+			: [atomic] "g" (&this->val), [val] "a" (val) \
+			: "memory" \
+		); \
+	}
+LIST_OF_ATOMICS
+#undef X
+
+#define X(SUFF, suff, type) \
+	type \
+	NAME(suff)(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
+	{ \
+		type res = val; \
+		(void) order; \
+		BODY_EXTRA \
+		__asm__ volatile( \
+			INSTR " %[res], (%[atomic])" \
 			: [res] "+r" (res) \
 			: [atomic] "g" (&this->val) \
 			: "memory" \
 		); \
 		return res; \
-	} while (0);
+	}
 
-signed char
-atomic_swap_c(volatile struct AtomicC ref this, signed char val,
-	      enum memory_order order)
-{
-	signed char res = val;
+#define BODY_EXTRA
 
-	(void) order;
+#define NAME(suff) atomic_swap_ ## suff
+#define INSTR "xchg"
+LIST_OF_ATOMICS
+#undef INSTR
+#undef NAME
 
-	__asm__ volatile(
-		"xchg %[res], (%[atomic])"
-		: [res] "+g" (res)
-		: [atomic] "g" (&this->val)
-		: "memory"
-	);
+#define NAME(suff) atomic_fetch_add_ ## suff
+#define INSTR "lock xadd"
+LIST_OF_ATOMICS
+#undef INSTR
+#undef NAME
 
-	return res;
-}
+#undef BODY_EXTRA
+#define BODY_EXTRA val = -val;
+#define NAME(suff) atomic_fetch_sub_ ## suff
+#define INSTR "lock xadd"
+LIST_OF_ATOMICS
+#undef INSTR
+#undef NAME
+#undef BODY_EXTRA
+#define BODY_EXTRA
 
-signed char
-atomic_fetch_add_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_BODY(signed char, "xadd");
-}
+#undef BODY_EXTRA
 
-signed char
-atomic_fetch_sub_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	val = -val;
+#undef X
 
-	LOCKED_BODY(signed char, "xadd");
-}
-
-#define LOCKED_COMPLEX_BODY(type, suffix, op) do { \
+#define X(SUFF, suff, type) \
+	type \
+	NAME(suff)(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
+	{ \
 		type old, new; \
-		old = atomic_load_ ## suffix(this, order); \
+		old = atomic_load_ ## suff(this, order); \
 		do { \
-			new = old op val; \
-		} while (!atomic_compare_exchange_ ## suffix(this, &old, new, order)); \
+			new = OP(old, val); \
+		} while (!atomic_compare_exchange_ ## suff(this, &old, new, order)); \
 		return old; \
-	} while (0)
+	}
 
-signed char
-atomic_fetch_or_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_COMPLEX_BODY(signed char, c, |);
-}
+#define NAME(suff) atomic_fetch_or_ ## suff
+#define OP(lhs, rhs) (lhs) | (rhs)
+LIST_OF_ATOMICS
+#undef OP
+#undef NAME
 
-signed char
-atomic_fetch_xor_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_COMPLEX_BODY(signed char, c, ^);
-}
+#define NAME(suff) atomic_fetch_xor_ ## suff
+#define OP(lhs, rhs) (lhs) ^ (rhs)
+LIST_OF_ATOMICS
+#undef OP
+#undef NAME
 
-signed char
-atomic_fetch_and_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_COMPLEX_BODY(signed char, c, &);
-}
+#define NAME(suff) atomic_fetch_and_ ## suff
+#define OP(lhs, rhs) (lhs) & (rhs)
+LIST_OF_ATOMICS
+#undef OP
+#undef NAME
 
-#define LOCKED_MINMAX_BODY(type, suffix, cmp) do { \
-		type old, new; \
-		do { \
-			old = atomic_load_ ## suffix(this, order); \
-			new = val cmp old ? val : old; \
-		} while (!atomic_compare_exchange_ ## suffix(this, &old, new, order)); \
-		return old; \
-	} while (0)
+#define NAME(suff) atomic_fetch_min_ ## suff
+#define OP(lhs, rhs) (lhs) < (rhs) ? (lhs) : (rhs)
+LIST_OF_ATOMICS
+#undef OP
+#undef NAME
 
-signed char
-atomic_fetch_max_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_MINMAX_BODY(signed char, c, >);
-}
+#define NAME(suff) atomic_fetch_max_ ## suff
+#define OP(lhs, rhs) (lhs) > (rhs) ? (lhs) : (rhs)
+LIST_OF_ATOMICS
+#undef OP
+#undef NAME
 
-signed char
-atomic_fetch_min_c(volatile struct AtomicC ref this, signed char val,
-		   enum memory_order order)
-{
-	LOCKED_MINMAX_BODY(signed char, c, <);
-}
+#undef X
 
-bool
-atomic_compare_exchange_c(volatile struct AtomicC ref this, signed char ref old,
-			  signed char new, enum memory_order order)
-{
-	bool res;
-
-	(void) order;
-
-	__asm__ volatile(
-		"lock cmpxchg %[new], (%[atomic])\n"
-		"setz %b[res]\n"
-		"movzx %b[res], %[res]\n"
-		: [expected] "+a" (*old),
-		  [res] "=r" (res)
-		: [atomic] "g" (&this->val), [new] "d" (new)
-		: "memory"
-	);
-
-	return res;
-}
+#define X(SUFF, suff, type) \
+	bool \
+	atomic_compare_exchange_ ## suff(volatile struct Atomic ## SUFF ref this, type ref old, type new, enum memory_order order) \
+	{ \
+		bool res; \
+		(void) order; \
+		__asm__ volatile( \
+			"lock cmpxchg %[new], (%[atomic])\n" \
+			"setz %b[res]\n" \
+			"movzx %b[res], %[res]\n" \
+			: [expected] "+a" (*old), \
+			  [res] "=r" (res) \
+			: [atomic] "g" (&this->val), [new] "d" (new) \
+			: "memory" \
+		); \
+		return res; \
+	}
+LIST_OF_ATOMICS
+#undef X
 
 void
 atomic_fence(enum memory_order order)
