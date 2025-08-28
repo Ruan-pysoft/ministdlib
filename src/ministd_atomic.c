@@ -171,13 +171,13 @@ atomic_compare_exchange_c(volatile struct AtomicC ref this, signed char ref old,
 
 	__asm__ volatile(
 		"lock cmpxchg %[atomic], %[new]\n"
-		"je .true\n"
+		"je .atomic_compare_exchange_c__true%=\n"
 		"mov 0, %[res]\n"
-		".true:\n"
+		".atomic_compare_exchange_c__true%=:\n"
 		"mov 1, %[res]\n"
-		: [atomic] "+g" (this->val), [expected] "+a" (*old),
+		: [atomic] "+d" (this->val), [expected] "+a" (*old),
 		  [res] "=g" (res)
-		: [new] "g" (new)
+		: [new] "m" (new)
 		:
 	);
 
