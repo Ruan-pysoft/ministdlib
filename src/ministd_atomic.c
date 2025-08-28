@@ -1,5 +1,7 @@
 #include <ministd_atomic.h>
 
+#include <ministd_memory.h>
+
 struct AtomicC {
 	signed char val;
 };
@@ -31,6 +33,20 @@ struct AtomicUZ {
 	usz val;
 };
 
+struct AtomicC own
+atomic_new_c(signed char val, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	struct AtomicC own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->val = val;
+
+	return res;
+}
+
 signed char
 atomic_load_c(volatile struct AtomicC ref this, enum memory_order order)
 {
@@ -39,10 +55,10 @@ atomic_load_c(volatile struct AtomicC ref this, enum memory_order order)
 	(void) order;
 
 	__asm__ volatile(
-		"mov %[atomic], %[res]"
+		"mov (%[atomic]), %[res]"
 		: [res] "=g" (res)
-		: [atomic] "g" (this->val)
-		:
+		: [atomic] "g" (&this->val)
+		: "memory"
 	);
 
 	return res;
@@ -55,10 +71,10 @@ atomic_store_c(volatile struct AtomicC ref this, signed char val,
 	(void) order;
 
 	__asm__ volatile(
-		"mov %[val], %[atomic]"
-		: [atomic] "=g" (this->val)
-		: [val] "g" (val)
+		"mov %[val], (%[atomic])"
 		:
+		: [atomic] "g" (&this->val), [val] "a" (val)
+		: "memory"
 	);
 }
 
@@ -66,10 +82,10 @@ atomic_store_c(volatile struct AtomicC ref this, signed char val,
 		type res = val; \
 		(void) order; \
 		__asm__ volatile( \
-			"lock " instr " %[atomic], %[res]" \
-			: [res] "+m" (res) \
-			: [atomic] "g" (this->val) \
-			: \
+			"lock " instr " %[res], (%[atomic])" \
+			: [res] "+r" (res) \
+			: [atomic] "g" (&this->val) \
+			: "memory" \
 		); \
 		return res; \
 	} while (0);
@@ -83,10 +99,10 @@ atomic_swap_c(volatile struct AtomicC ref this, signed char val,
 	(void) order;
 
 	__asm__ volatile(
-		"xchg %[atomic], %[res]"
+		"xchg %[res], (%[atomic])"
 		: [res] "+g" (res)
-		: [atomic] "g" (this->val)
-		:
+		: [atomic] "g" (&this->val)
+		: "memory"
 	);
 
 	return res;
@@ -110,8 +126,8 @@ atomic_fetch_sub_c(volatile struct AtomicC ref this, signed char val,
 
 #define LOCKED_COMPLEX_BODY(type, suffix, op) do { \
 		type old, new; \
+		old = atomic_load_ ## suffix(this, order); \
 		do { \
-			old = atomic_load_ ## suffix(this, order); \
 			new = old op val; \
 		} while (!atomic_compare_exchange_ ## suffix(this, &old, new, order)); \
 		return old; \
@@ -170,15 +186,17 @@ atomic_compare_exchange_c(volatile struct AtomicC ref this, signed char ref old,
 	(void) order;
 
 	__asm__ volatile(
-		"lock cmpxchg %[atomic], %[new]\n"
-		"je .atomic_compare_exchange_c__true%=\n"
-		"mov 0, %[res]\n"
-		".atomic_compare_exchange_c__true%=:\n"
-		"mov 1, %[res]\n"
-		: [atomic] "+d" (this->val), [expected] "+a" (*old),
+		"lock cmpxchg %[new], (%[atomic])\n"
+		"jz .true_%=\n"
+		"mov $0, %[res]\n"
+		"jmp .end_%=\n"
+		".true_%=:\n"
+		"mov $1, %[res]\n"
+		".end_%=:\n"
+		: [expected] "+a" (*old),
 		  [res] "=g" (res)
-		: [new] "m" (new)
-		:
+		: [atomic] "g" (&this->val), [new] "d" (new)
+		: "memory"
 	);
 
 	return res;

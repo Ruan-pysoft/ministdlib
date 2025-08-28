@@ -9,12 +9,12 @@ int
 main(void)
 {
 	err_t err = ERR_OK;
-	int i;
+	usz i;
 
 	puts("Starting memory test...", NULL);
 
 	for (i = 0; i < 1024; ++i) {
-		int j;
+		usz j;
 
 		allocs[i] = alloc(16, &err);
 		if (err) {

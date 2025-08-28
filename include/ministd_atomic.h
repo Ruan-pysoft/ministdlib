@@ -1,6 +1,7 @@
 #ifndef _RM_STD_ATOMIC_H
 #define _RM_STD_ATOMIC_H
 
+#include <ministd_error.h>
 #include <ministd_types.h>
 
 /* TODO: figure out if I also want release, acquire, consume etc.
@@ -66,6 +67,17 @@ struct AtomicUZ;
 	void atomic_ ## name ## _ul(volatile struct AtomicUL ref this, unsigned long val, enum memory_order order); \
 	void atomic_ ## name ## _z(volatile struct AtomicZ ref this, isz val, enum memory_order order); \
 	void atomic_ ## name ## _uz(volatile struct AtomicUZ ref this, usz val, enum memory_order order)
+
+struct AtomicC own atomic_new_c(signed char val, err_t ref err_out);
+struct AtomicUC own atomic_new_uc(unsigned char val, err_t ref err_out);
+struct AtomicH own atomic_new_h(short val, err_t ref err_out);
+struct AtomicUH own atomic_new_uh(unsigned short val, err_t ref err_out);
+struct AtomicI own atomic_new_i(int val, err_t ref err_out);
+struct AtomicUI own atomic_new_ui(unsigned int val, err_t ref err_out);
+struct AtomicL own atomic_new_l(long val, err_t ref err_out);
+struct AtomicUL own atomic_new_ul(unsigned long val, err_t ref err_out);
+struct AtomicZ own atomic_new_z(isz val, err_t ref err_out);
+struct AtomicUZ own atomic_new_uz(usz val, err_t ref err_out);
 
 ATOMIC_FN0_DECL(load);
 ATOMIC_FN1_VOID_DECL(store);
