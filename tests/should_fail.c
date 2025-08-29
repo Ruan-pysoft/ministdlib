@@ -1,4 +1,4 @@
-#include "ministd_io.h"
+#include <ministd_io.h>
 
 int
 main(void)

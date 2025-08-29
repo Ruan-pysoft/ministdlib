@@ -113,7 +113,7 @@ int main(void) {
 		}
 
 		c = atomic_load_c(ch, MO_STRICT);
-		putc(c, NULL);
+		printc(c, NULL);
 
 		if (c == '\0') break;
 	}

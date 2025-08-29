@@ -1,6 +1,5 @@
 #include <ministd_fmt.h>
 
-#include <ministd_error.h>
 #include <ministd_io.h>
 #include <ministd_memory.h>
 

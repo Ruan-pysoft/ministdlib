@@ -1,6 +1,5 @@
 #include <ministd_sched.h>
 
-#include <ministd.h>
 #include <ministd_syscall.h>
 
 static usz

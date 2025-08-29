@@ -1,6 +1,6 @@
-#include "ministd.h"
-#include "ministd_io.h"
-#include "ministd_error.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_error.h>
 
 char buf[1024];
 

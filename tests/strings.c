@@ -1,6 +1,6 @@
-#include "ministd.h"
-#include "ministd_io.h"
-#include "ministd_string.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_string.h>
 
 const char ref hello_world = "Hello, world";
 

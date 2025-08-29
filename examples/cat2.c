@@ -1,6 +1,6 @@
-#include "ministd.h"
-#include "ministd_io.h"
-#include "ministd_string.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_string.h>
 
 #define BUFCAP (64 * 1024)
 

@@ -1,6 +1,7 @@
-#include "ministd.h"
-#include "ministd_memory.h"
-#include "ministd_string.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_memory.h>
+#include <ministd_string.h>
 
 char *allocs[1024];
 const char *test_string = "Hai #.... :3";

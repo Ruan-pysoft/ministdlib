@@ -1,6 +1,6 @@
-#include "ministd.h"
-#include "ministd_io.h"
-#include "ministd_types.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_types.h>
 
 int
 main(void)

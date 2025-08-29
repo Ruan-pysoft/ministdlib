@@ -1,6 +1,5 @@
 #include <ministd_memory.h>
 
-#include <ministd_error.h>
 #include <ministd_syscall.h>
 
 /* screw it, I'll do this manually later */

@@ -1,5 +1,5 @@
-#include "ministd.h"
-#include "ministd_types.h"
+#include <ministd.h>
+#include <ministd_io.h>
 
 int
 fib(int n)

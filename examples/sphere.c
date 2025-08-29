@@ -1,8 +1,9 @@
-#include "ministd.h"
-#include "ministd_fmt.h"
-#include "ministd_term.h"
-#include "ministd_time.h"
-#include "ministd_types.h"
+#include <ministd.h>
+#include <ministd_io.h>
+#include <ministd_fmt.h>
+#include <ministd_term.h>
+#include <ministd_time.h>
+#include <ministd_types.h>
 
 #define SLEN 41
 

@@ -1,5 +1,5 @@
-#include "ministd.h"
-#include "ministd_io.h"
+#include <ministd.h>
+#include <ministd_io.h>
 
 int
 main(void)

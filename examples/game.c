@@ -121,7 +121,7 @@ main(void)
 			prints(" games)\n", NULL);
 			prints("Max. no. of rounds so far: ", NULL);
 			printuz(max_rounds, NULL);
-			putc('\n', NULL);
+			printc('\n', NULL);
 			prints("Expected rounds: ~", NULL);
 			expected_ipart = fdiv(
 				total_rounds, i+1, 1000 * 1000, &expected_fpart
@@ -130,7 +130,7 @@ main(void)
 				expected_ipart, expected_fpart, 1000 * 1000,
 				stdout, NULL
 			);
-			putc('\n', NULL);
+			printc('\n', NULL);
 		}
 	}
 
