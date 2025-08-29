@@ -128,7 +128,7 @@ int main(void) {
 		clone(thread_fn, counter, &cl_args, NULL);
 	}
 
-	sleep(1, NULL);
+	sleep(0.1, NULL);
 
 	num = atomic_load_i(counter, MO_STRICT);
 

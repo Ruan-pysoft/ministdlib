@@ -22,7 +22,7 @@ $(BIN_DIR)/%: %.c
 	$(CC) $(CFLAGS) $< -o $@ $(LDFLAGS)
 	@echo -e "RUNNING   \033[33m\033[1m$(TEST_NAME)\033[m..."
 	$@ > "$(TEST_NAME).output"
-	@if diff --color "$(TEST_NAME).output" "$(TEST_NAME).expected"; then\
+	@if diff -a --color "$(TEST_NAME).output" "$(TEST_NAME).expected"; then\
 		echo -e " === \033[32m\033[1mTEST \033[33m$(TEST_NAME)\033[32m PASSED\033[m ===";\
 	else\
 		echo -e " === \033[31m\033[1mTEST \033[33m$(TEST_NAME)\033[31m FAILED\033[m ===";\
