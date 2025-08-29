@@ -56,9 +56,8 @@ LIST_OF_ATOMICS
 	type \
 	NAME(suff)(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
 	{ \
-		type res = val; \
+		type res = VAL(val); \
 		(void) order; \
-		BODY_EXTRA \
 		__asm__ volatile( \
 			INSTR " %[res], (%[atomic])" \
 			: [res] "+r" (res) \
@@ -68,7 +67,7 @@ LIST_OF_ATOMICS
 		return res; \
 	}
 
-#define BODY_EXTRA
+#define VAL(val) val
 
 #define NAME(suff) atomic_swap_ ## suff
 #define INSTR "xchg"
@@ -82,15 +81,15 @@ LIST_OF_ATOMICS
 #undef INSTR
 #undef NAME
 
-#undef BODY_EXTRA
-#define BODY_EXTRA val = -val;
+#undef VAL
+#define VAL(val) -val;
 #define NAME(suff) atomic_fetch_sub_ ## suff
 #define INSTR "lock xadd"
 LIST_OF_ATOMICS
 #undef INSTR
 #undef NAME
-#undef BODY_EXTRA
-#define BODY_EXTRA
+#undef VAL
+#define VAL(val) val
 
 #undef BODY_EXTRA
 
