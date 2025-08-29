@@ -1,9 +1,11 @@
 #ifndef _RM_STD_FMT_H
 #define _RM_STD_FMT_H
 
-#include <ministd_error.h>
-#include <ministd_io.h>
-#include <ministd_types.h>
+#include <_ministd_prelude.h>
+
+extern FILE ref stdin;
+extern FILE ref stdout;
+extern FILE ref stderr;
 
 #define LIST_OF_FMTTYPES_NUMERIC \
 	X(h, short) \

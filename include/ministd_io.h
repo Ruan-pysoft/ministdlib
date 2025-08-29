@@ -1,8 +1,7 @@
 #ifndef _RM_STD_IO_H
 #define _RM_STD_IO_H
 
-#include <ministd_types.h>
-#include <ministd_error.h>
+#include <_ministd_prelude.h>
 
 enum FILE_OP {
 	FO_FLUSH,
@@ -10,19 +9,18 @@ enum FILE_OP {
 	FO_GETFD
 };
 
-struct FILE;
 typedef usz (*FILE_read_t)(struct FILE ref this, ptr buf, usz cap, err_t ref err_out);
 typedef usz (*FILE_write_t)(struct FILE ref this, const ptr buf, usz cap, err_t ref err_out);
 typedef void (*FILE_close_t)(struct FILE ref this, err_t ref err_out);
 typedef usz (*FILE_run_t)(struct FILE ref this, enum FILE_OP op, err_t ref err_out);
-typedef struct FILE {
+struct FILE {
 	FILE_read_t read;
 	FILE_write_t write;
 	FILE_close_t close;
 	FILE_run_t run;
 	char ungot;
 	bool has_ungot;
-} FILE;
+};
 
 extern FILE ref stdin;
 extern FILE ref stdout;

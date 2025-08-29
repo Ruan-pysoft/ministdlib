@@ -1,8 +1,7 @@
 #ifndef _RM_STD_ATOMIC_H
 #define _RM_STD_ATOMIC_H
 
-#include <ministd_error.h>
-#include <ministd_types.h>
+#include <_ministd_prelude.h>
 
 /* TODO: figure out if I also want release, acquire, consume etc.
  * like in <stdatomic.h>

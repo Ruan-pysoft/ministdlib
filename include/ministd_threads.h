@@ -1,8 +1,7 @@
 #ifndef _RM_STD_THREADS_H
 #define _RM_STD_THREADS_H
 
-#include <ministd_error.h>
-#include <ministd_types.h>
+#include <_ministd_prelude.h>
 
 typedef struct AtomicI mutex_t;
 

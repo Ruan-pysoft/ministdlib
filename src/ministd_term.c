@@ -1,5 +1,6 @@
 #include <ministd_term.h>
 
+#include <ministd_io.h>
 #include <ministd_fmt.h>
 #include <ministd_string.h>
 

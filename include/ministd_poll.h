@@ -1,11 +1,9 @@
 #ifndef _RM_STD_POLL_H
 #define _RM_STD_POLL_H
 
-#include <asm-generic/poll.h>
+#include <_ministd_prelude.h>
 
-#include <ministd_error.h>
-#include <ministd_io.h>
-#include <ministd_types.h>
+#include <asm-generic/poll.h>
 
 enum poll_flag {
 	PF_IN = POLLIN,

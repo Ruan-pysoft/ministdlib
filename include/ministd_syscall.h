@@ -1,7 +1,7 @@
 #ifndef _RM_STD_SYSCALL_H
 #define _RM_STD_SYSCALL_H
 
-#include <ministd_types.h>
+#include <_ministd_prelude.h>
 
 /* Apparently from kernel not stdc, so I'll do this... for now */
 #include <asm/unistd.h>

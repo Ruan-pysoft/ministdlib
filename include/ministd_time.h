@@ -1,7 +1,7 @@
 #ifndef _RM_STD_TIME_H
 #define _RM_STD_TIME_H
 
-#include <ministd_error.h>
+#include <_ministd_prelude.h>
 
 struct timespec {
 	long tv_sec;

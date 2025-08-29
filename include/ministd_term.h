@@ -1,9 +1,7 @@
 #ifndef _RM_STD_TERM_H
 #define _RM_STD_TERM_H
 
-#include <ministd_types.h>
-#include <ministd_error.h>
-#include <ministd_io.h>
+#include <_ministd_prelude.h>
 
 void term_csi_cursor_up(int n, FILE ref file, err_t ref err_out);
 void term_csi_cursor_down(int n, FILE ref file, err_t ref err_out);

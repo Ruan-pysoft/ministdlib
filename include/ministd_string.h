@@ -1,8 +1,7 @@
 #ifndef _RM_STD_STRING_H
 #define _RM_STD_STRING_H
 
-#include <ministd_error.h>
-#include <ministd_types.h>
+#include <_ministd_prelude.h>
 
 usz strlen(const char ref cstr);
 usz strnlen(const char ref cstr, usz maxlen);

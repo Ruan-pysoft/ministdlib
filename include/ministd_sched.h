@@ -1,11 +1,9 @@
 #ifndef _RM_STD_SCHED_H
 #define _RM_STD_SCHED_H
 
-#include <linux/sched.h>
+#include <_ministd_prelude.h>
 
-#include <ministd_error.h>
-#include <ministd_io.h>
-#include <ministd_types.h>
+#include <linux/sched.h>
 
 #define _syscall_clone3(res, cl_args) \
 		_syscall2(__NR_clone3, res, cl_args, sizeof(*cl_args));

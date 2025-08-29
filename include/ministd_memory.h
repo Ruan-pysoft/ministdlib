@@ -1,8 +1,7 @@
 #ifndef _RM_STD_MEMORY_H
 #define _RM_STD_MEMORY_H
 
-#include <ministd_types.h>
-#include <ministd_error.h>
+#include <_ministd_prelude.h>
 
 own_ptr alloc(usz bytes, err_t ref err_out);
 own_ptr nalloc(usz size, usz n, err_t ref err_out);
