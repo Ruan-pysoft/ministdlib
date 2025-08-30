@@ -3,9 +3,6 @@
 
 #include <_ministd_prelude.h>
 
-/* TODO: figure out if I also want release, acquire, consume etc.
- * like in <stdatomic.h>
- */
 enum memory_order {
 	MO_RELAXED,
 	MO_STRICT
@@ -84,6 +81,6 @@ bool atomic_compare_exchange_ ## suff(volatile struct Atomic ## SUFF ref this, t
 LIST_OF_ATOMICS
 #undef X
 
-void atomic_fence(enum memory_order order);
+void memory_fence(void);
 
 #endif /* _RM_STD_ATOMIC_H */

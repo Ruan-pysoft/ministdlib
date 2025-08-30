@@ -29,3 +29,4 @@ rust atomics and locks -- https://marabos.nl/atomics/
 standard library header <stdatomic.h> -- https://en.cppreference.com/w/c/header/stdatomic.html
 memory_order -- https://en.cppreference.com/w/c/atomic/memory_order.html
 atomic_thread_fence -- https://en.cppreference.com/w/c/atomic/atomic_thread_fence.html
+conversation about memory fences and memory ordering in atomics -- https://chatgpt.com/share/68b2b465-ced8-8012-bb08-502f46285ce6

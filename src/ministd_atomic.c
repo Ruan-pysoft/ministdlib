@@ -25,7 +25,7 @@ LIST_OF_ATOMICS
 	atomic_load_ ## suff(volatile struct Atomic ## SUFF ref this, enum memory_order order) \
 	{ \
 		type res; \
-		(void) order; \
+		if (order == MO_STRICT) __asm__ volatile("mfence" ::: "memory"); \
 		__asm__ volatile( \
 			"mov (%[atomic]), %[res]" \
 			: [res] "=g" (res) \
@@ -41,7 +41,7 @@ LIST_OF_ATOMICS
 	void \
 	atomic_store_ ## suff(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
 	{ \
-		(void) order; \
+		if (order == MO_STRICT) __asm__ volatile("mfence" ::: "memory"); \
 		__asm__ volatile( \
 			"mov %[val], (%[atomic])" \
 			: \
@@ -57,7 +57,7 @@ LIST_OF_ATOMICS
 	NAME(suff)(volatile struct Atomic ## SUFF ref this, type val, enum memory_order order) \
 	{ \
 		type res = VAL(val); \
-		(void) order; \
+		if (order == MO_STRICT) __asm__ volatile("mfence" ::: "memory"); \
 		__asm__ volatile( \
 			INSTR " %[res], (%[atomic])" \
 			: [res] "+r" (res) \
@@ -144,7 +144,7 @@ LIST_OF_ATOMICS
 	atomic_compare_exchange_ ## suff(volatile struct Atomic ## SUFF ref this, type ref old, type new, enum memory_order order) \
 	{ \
 		bool res; \
-		(void) order; \
+		if (order == MO_STRICT) __asm__ volatile("mfence" ::: "memory"); \
 		__asm__ volatile( \
 			"lock cmpxchg %[new], (%[atomic])\n" \
 			"setz %b[res]\n" \
@@ -160,7 +160,7 @@ LIST_OF_ATOMICS
 #undef X
 
 void
-atomic_fence(enum memory_order order)
+memory_fence(void)
 {
-	(void) order;
+	__asm__ volatile("mfence" ::: "memory");
 }
