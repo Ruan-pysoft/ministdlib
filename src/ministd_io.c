@@ -1,6 +1,7 @@
 #include <ministd_io.h>
 
 #include <ministd_memory.h>
+#include <ministd_threads.h>
 #include <ministd_string.h>
 #include <ministd_syscall.h>
 
@@ -11,6 +12,7 @@ FILE ref stderr;
 struct RAW_FILE {
 	FILE ptrs;
 	int fd;
+	mutex_t own lock;
 };
 
 static usz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out);
@@ -33,17 +35,26 @@ static struct RAW_FILE raw_stderr;
 static usz
 raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 {
-	return fd_read(this->fd, buf, cap, err_out);
+	usz res;
+	mutex_lock(this->lock);
+	res = fd_read(this->fd, buf, cap, err_out);
+	mutex_unlock(this->lock);
+	return res;
 }
 static usz
 raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out)
 {
-	return fd_write(this->fd, buf, cap, err_out);
+	usz res;
+	mutex_lock(this->lock);
+	res = fd_write(this->fd, buf, cap, err_out);
+	mutex_unlock(this->lock);
+	return res;
 }
 static void
 raw_file_close(struct RAW_FILE ref this, err_t ref err_out)
 {
 	fd_close(this->fd, err_out);
+	free(this->lock);
 }
 static usz
 raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
@@ -150,6 +161,11 @@ from_fd(int fd, err_t ref err_out)
 	TRY_WITH(err, NULL);
 	res->ptrs = raw_file_ptrs;
 	res->fd = fd;
+	res->lock = mutex_new(&err);
+	if (err != ERR_OK) {
+		free(res);
+		ERR_WITH(err, NULL);
+	}
 
 	return (FILE own)res;
 }
@@ -380,6 +396,7 @@ struct BufferedFile {
 	ptr write_buf_pos;
 	ptr write_buf_end;
 	usz write_cap;
+	mutex_t own lock;
 };
 
 static BufferedFile own buffered_stdin;
@@ -428,7 +445,12 @@ bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
 	BufferedFile own res;
 
 	res = alloc(sizeof(BufferedFile), &err);
-	TRY_WITH(err, NULL);
+	if (err != ERR_OK) {
+		free(read_buf);
+		free(write_buf);
+
+		ERR_WITH(err, NULL);
+	}
 
 	res->ptrs = buffered_file_ptrs;
 	res->raw = file;
@@ -443,6 +465,15 @@ bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
 	res->write_buf_end = write_buf;
 	res->write_cap = write_cap;
 
+	res->lock = mutex_new(&err);
+	if (err != ERR_OK) {
+		free(read_buf);
+		free(write_buf);
+		free(res);
+
+		ERR_WITH(err, NULL);
+	}
+
 	return res;
 }
 
@@ -451,18 +482,30 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	usz to_read;
+	usz res;
+
+	mutex_lock(file->lock);
 
 	if (file->read_buf_pos == file->read_buf_end && cap > file->read_cap) {
-		return read(file->raw, buf, cap, err_out);
+		res = read(file->raw, buf, cap, err_out);
+		mutex_unlock(file->lock);
+		return res;
 	}
 
 	if (file->read_buf_pos == file->read_buf_end) {
 		usz bytes_read;
 
 		bytes_read = read(file->raw, file->read_buf, file->read_cap, &err);
-		TRY_WITH(err, 0);
+		if (err != ERR_OK) {
+			mutex_unlock(file->lock);
 
-		if (bytes_read == 0) return 0;
+			ERR_WITH(err, 0);
+		}
+
+		if (bytes_read == 0) {
+			mutex_unlock(file->lock);
+			return 0;
+		}
 
 		file->read_buf_pos = file->read_buf;
 		file->read_buf_end = (char*)file->read_buf + bytes_read;
@@ -474,12 +517,16 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 	memmove(buf, file->read_buf_pos, to_read);
 	file->read_buf_pos = (char ref)file->read_buf_pos + to_read;
 
+	mutex_unlock(file->lock);
+
 	return to_read;
 }
 void
 bf_flush(BufferedFile ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
+
+	mutex_lock(file->lock);
 
 	while (file->write_buf_end > file->write_buf_pos) {
 		isz bytes_written;
@@ -490,26 +537,42 @@ bf_flush(BufferedFile ref file, err_t ref err_out)
 			(char*)file->write_buf_end - (char*)file->write_buf_pos,
 			&err
 		);
-		TRY_VOID(err);
+		if (err != ERR_OK) {
+			mutex_unlock(file->lock);
 
-		if (bytes_written == 0) return;
+			ERR_VOID(err);
+		}
+
+		if (bytes_written == 0) {
+			mutex_unlock(file->lock);
+			return;
+		}
 
 		file->write_buf_pos = (char ref)file->write_buf_pos + bytes_written;
 	}
 
 	file->write_buf_pos = file->write_buf;
 	file->write_buf_end = file->write_buf;
+
+	mutex_unlock(file->lock);
 }
 usz
 bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
+	mutex_lock(file->lock);
+
 	if ((char ref)file->write_buf_end + cap > (char ref)file->write_buf + file->write_cap) {
 		bf_flush(file, &err);
-		TRY_WITH(err, 0);
+		if (err != ERR_OK) {
+			mutex_unlock(file->lock);
+
+			ERR_WITH(err, 0);
+		}
 
 		if (file->write_buf_pos < file->write_buf_end) {
+			mutex_unlock(file->lock);
 			return 0;
 		}
 
@@ -519,6 +582,7 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 			file->write_buf_pos = file->write_buf;
 			file->write_buf_end = (char ref)file->write_buf + cap;
 			memmove(file->write_buf, buf, cap);
+			mutex_unlock(file->lock);
 			return cap;
 		}
 	} else {
@@ -528,9 +592,13 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 		/* flush on newline */
 		if (((char ref)file->write_buf_end)[-1] == '\n') {
 			bf_flush(file, &err);
-			TRY_WITH(err, 0);
+			if (file->write_buf_pos < file->write_buf_end) {
+				mutex_unlock(file->lock);
+				return 0;
+			}
 		}
 
+		mutex_unlock(file->lock);
 		return cap;
 	}
 }
@@ -544,6 +612,7 @@ bf_close(BufferedFile ref file, err_t ref err_out)
 	free(file->read_buf);
 	free(file->write_buf);
 	close(file->raw, err_out);
+	free(file->lock);
 }
 usz
 bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out)
