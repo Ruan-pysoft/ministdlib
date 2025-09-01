@@ -1,14 +1,17 @@
 # Ruan's Mini Stdlib
 
-A toy stdlib for c89 made for fun and learning
-(and procrastinating studying math...)
+(Called stdlib because I couldn't initially think of a better name,
+only recently realised that "runtime library" is probably a more accurate terminology)
+
+A toy runtime library for c89 made for fun and learning
 
 Main repo: https://sr.ht/~ruan_p/ministdlib  
 Official github mirror: https://github.com/Ruan-pysoft/ministdlib
 
 Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 (though the inline assembly parts might be a gcc extension?).
-It is entirely self-contained and written from scratch by me.
+It is entirely self-contained and written from scratch by me,
+with the exception of some Linux kernel headers.
 
 Currently I'm only targeting my own machine
 (Lenovo laptop running Arch Linux, compiling with gcc).
@@ -45,10 +48,10 @@ A demo of `examples/sphere.c`.
 
 ## Usage
 
-To compile the stdlib simply run `make`.
+To compile the library simply run `make`.
 
 To compile a program run `./cc $programname`
-(you must first compile the stdlib with `make MODE=release`)
+(you must first compile the library with `make MODE=release`)
 or `./cc_dbg $programname` for a debuggable stdlib.
 Note that the `cc` script is just a thin wrapper over `gcc`,
 so you can pass any flags you would pass to `gcc` to `cc`.
@@ -89,7 +92,7 @@ I think ditching the stdlib came later? And by later I mean like an hour or two 
 As I recall, I was having trouble with the ANSI escape codes not working properly,
 so I thought to make a library for that,
 and while I'm at it I might as well make a library for IO as well,
-and while I'm doing *that* I might as well write my own stdlib...
+and while I'm doing *that* I might as well write my own runtime library...
 And then I only got a working sphere visualiser like a week later, lol.
 
 I also took some inspiration for my design from [this](https://old.reddit.com/r/C_Programming/comments/feduq2) reddit post,
