@@ -5,6 +5,247 @@ along with their test coverage.
 
 I will also document some of the process/decisions behind their implementation.
 
+## Prelude
+
+The header `<_ministd_prelude.h>` provides a core set of functionality
+that is available everywhere,
+and it is imported at the start of every other header to ensure this.
+
+As far as possible,
+importing any header other than `<_ministd_prelude.h>` in a header is avoided.
+This also assists with giving a uniform core API.
+(eg. if you import `<ministd_fmt.h>` you can know
+you won't get functions from `<ministd_io.h>`)
+
+The prelude header imports the following headers:
+ - `<ministd_types.h>` for core types used widely throughout the library
+ - `<ministd.h>` providing basic functionality like `_start` and `exit` functions,
+   and access to `argv` and `envp`, etc.
+ - `<ministd_error.h>` for the library's error propagation/reporting interface
+   which is widely used throughout the library
+
+Furthermore, it defines a type alias `typedef struct FILE FILE;`
+so that headers can use files without including `<ministd_io.h>`
+(which also includes the definition of the `FILE` struct,
+to allow rudimentary polymorphism
+by having the first member of a struct be a `struct FILE`,
+thereby having the same initial bytes as a `FILE` struct)
+
+TODO shouldn't the `FILE` typedef be moved to `<ministd_types.h>`?
+
+## Headers
+
+### Core
+
+#### `<ministd.h>`
+
+_STABLE_
+
+**Purpose**: startup/exit functionality
+
+Basic functions to do with startup, exit, and interacting with the environment.
+
+#### `<ministd_types.h>`
+
+_STABLE_
+
+**Purpose**: expose unified type interface
+
+Includes the definitions of basic types used throughout the library,
+such as the boolean type (which is not a C builtin type).
+
+Also includes the `#define`s for the different pointer types
+used for ownership tracking,
+more on that later.
+
+#### `<ministd_error.h>`
+
+_STABLE_
+
+**Purpose**: define unified error interface
+
+Defines the error propagation/reporting interface of the library.
+
+#### `<ministd_syscall.h>`
+
+_SEMI-INTERNAL_
+
+**Purpose**: provide wrappers for calling syscalls
+
+Defines macros `_syscall0` through `_syscall6`,
+as well as including `<asm/unistd.h>`
+where the Linux syscall numbers are defined.
+
+Mostly used internally, and has no source file associated.
+
+Originally it was defined as a public header,
+since the library is by no means fully-featured
+and the user might on occasion have to delve into calling syscalls manually;
+however I am considering moving it to `<_ministd_syscall.h>` to mark it internal
+as the library is getting more full-featured.
+This should especially be done if/when multi-platform support is added.
+
+#### `<ministd_memory.h>`
+
+_TENTATIVE_
+
+**Purpose**: provide memory allocation and management facilities
+
+Provides memory management functionality.
+
+Provides a suite of functions for allocating and freeing memory,
+as well as functions for moving and zeroing memory.
+
+Should be expanded at some point to contain `memset` equivalents and the like.
+
+Additionally provides an `Allocator` interface,
+which allows the implementation of custom allocators.
+
+Unfortunately, support for the use of custom allocators
+is not widespread through the rest of the library,
+so it is mostly a curiosity at the current point in time.
+
+### Data
+
+#### `<ministd_string.h>`
+
+_REDESIGN PENDING_
+
+**Purpose**: provide dynamic strings
+
+Provides some basic cstring functions
+as well as an automatically-managed growable string type.
+
+Currently it is vaguely based on plan9's `string.h`,
+but it was made with little planning or documentation
+and is currently something of a mess.
+
+At some point it will be redesigned,
+and I recommend avoiding its use until then.
+
+### IO
+
+#### `<ministd_io.h>`
+
+_STABLE_
+
+**Purpose**: provide basic io interface
+
+The basic IO interface used in the library.
+
+Defines the `FILE` struct,
+as well as a few different functions for working with files.
+
+Also provides the `stdin`, `stdout`, and `stderr` files.
+
+The `FILE` struct is designed to be extensible,
+in order to allow the same IO functions to be used with,
+for example,
+raw files, buffered files, string files, sockets, etc.
+
+(Note that sockets aren't a supported feature yet,
+but the point is that they could easily be added
+without touching the code in `ministd_io.c` or `<ministd_io.h>`)
+
+#### `<ministd_fmt.h>`
+
+_TENTATIVE_
+
+**Purpose**: provide formatted io interface
+
+Formatted IO built on top of `<ministd_io.h>`.
+
+Note that none of the low-level details in `<ministd_io.h>` is included
+when including `<ministd_fmt.h>`,
+though the `stdin`, `stdout`, and `stderr` files are also exposed here.
+
+A suite of `printf`-like and `scanf`-like functions are provided,
+but modified to fit with the ministdlib's way of doing things.
+It also does not make use of varargs,
+which makes typing a lot more difficult
+(and moves some of it over to the runtime).
+
+My initial motivation for eschewing variadics
+probably also involved me not wanting to
+spend the time to learn how to use variadics in C,
+especially without stdlib support...
+
+#### `<ministd_term.h>`
+
+_DEVELOPING_
+
+**Purpose**: facilitate formatted terminal output
+
+Contains various functions and constants
+for writing formatted output to the terminal.
+
+#### `<ministd_poll.h>`
+
+_STABLE_
+
+**Purpose**: expose polling capabilities for file descriptors
+
+Provides polling functionality to poll file descriptors.
+
+### Concurrency
+
+#### `<ministd_atomic.h>`
+
+_STABLE_
+
+**Purpose**: provide atomic types/operations
+
+Provides ten different atomics,
+five different integer sizes, both signed and unsigned.
+
+It also provides functions for working with atomics,
+along with the `memory_fence` function.
+
+Protip: If you want to be naughty,
+you can use the fact that each atomic type
+is just a thin wrapper over the corresponding integer type,
+and that this design is unlikely to change in the future
+to do some pointer typecasting and interact directly with the raw bytes.
+
+#### `<ministd_sched.h>`
+
+_STABLE_
+
+**Purpose**: provide support for spawning subprocesses
+
+Currently just provides a wrapper around the Linux `clone3` syscall.
+
+(I *would* call it a thin wrapper,
+except I spent several weeks working on it
+and it was quite tricky to get right in the end.
+Turns out just doing half of it in assembly
+was easier than fighting my C compiler,
+who knew?)
+
+#### `<ministd_threads.h>`
+
+_BUDDING_
+
+**Purpose**: provide support for multithreading
+
+Currently just provides a mutex lock.
+
+In the future, I plan on also supporting futexes and threadpools
+through this header too.
+
+### Misc
+
+#### `<ministd_time.h>`
+
+_BUDDING_
+
+**Purpose**: provide timing and waiting functionality
+
+Contains some functions to support sleeping,
+including a more low-level `nanosleep`
+which stays close to the way the syscall works for maximum control,
+and more high-level functions like `sleep` which handles details automatically.
+
 ## Core
 
 ### Startup and exit
