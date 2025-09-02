@@ -13,6 +13,9 @@ Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 It is entirely self-contained and written from scratch by me,
 with the exception of some Linux kernel headers.
 
+For a description of the features and design of the library,
+see [`features.md`](./features.md).
+
 Currently I'm only targeting my own machine
 (Lenovo laptop running Arch Linux, compiling with gcc).
 At some point in the future I might start targeting other Linux machines
