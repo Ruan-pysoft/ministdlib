@@ -11,6 +11,8 @@ char ref ref envp(void);
 void atexit(void (ref func)(void));
 void exit(int exitcode);
 void thread_exit(int exitcode);
+void panic(isz exitcode);
+#define PANIC(code) do { panic(code); __builtin_unreachable(); } while (0)
 void _start(void);
 
 #endif /* _RM_STD_H */

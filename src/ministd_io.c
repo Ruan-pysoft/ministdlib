@@ -12,7 +12,6 @@ FILE ref stderr;
 struct RAW_FILE {
 	FILE ptrs;
 	int fd;
-	mutex_t own lock;
 };
 
 static usz raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out);
@@ -28,33 +27,28 @@ static FILE raw_file_ptrs = {
 	false,                        /* .has_ungot */
 };
 
-static struct RAW_FILE raw_stdin;
-static struct RAW_FILE raw_stdout;
-static struct RAW_FILE raw_stderr;
+static struct RAW_FILE own raw_stdin;
+static struct RAW_FILE own raw_stdout;
+static struct RAW_FILE own raw_stderr;
 
 static usz
 raw_file_read(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	usz res;
-	mutex_lock(this->lock);
 	res = fd_read(this->fd, buf, cap, err_out);
-	mutex_unlock(this->lock);
 	return res;
 }
 static usz
 raw_file_write(struct RAW_FILE ref this, const ptr buf, usz cap, err_t ref err_out)
 {
 	usz res;
-	mutex_lock(this->lock);
 	res = fd_write(this->fd, buf, cap, err_out);
-	mutex_unlock(this->lock);
 	return res;
 }
 static void
 raw_file_close(struct RAW_FILE ref this, err_t ref err_out)
 {
 	fd_close(this->fd, err_out);
-	free(this->lock);
 }
 static usz
 raw_file_misc(struct RAW_FILE ref this, enum FILE_OP op, err_t ref err_out)
@@ -161,7 +155,6 @@ from_fd(int fd, err_t ref err_out)
 	TRY_WITH(err, NULL);
 	res->ptrs = raw_file_ptrs;
 	res->fd = fd;
-	res->lock = mutex_new(&err);
 	if (err != ERR_OK) {
 		free(res);
 		ERR_WITH(err, NULL);
@@ -396,7 +389,6 @@ struct BufferedFile {
 	ptr write_buf_pos;
 	ptr write_buf_end;
 	usz write_cap;
-	mutex_t own lock;
 };
 
 static BufferedFile own buffered_stdin;
@@ -446,6 +438,8 @@ bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
 
 	res = alloc(sizeof(BufferedFile), &err);
 	if (err != ERR_OK) {
+		close(file, NULL);
+		free(file);
 		free(read_buf);
 		free(write_buf);
 
@@ -465,15 +459,6 @@ bf_new_from(FILE own file, own_ptr read_buf, usz read_cap,
 	res->write_buf_end = write_buf;
 	res->write_cap = write_cap;
 
-	res->lock = mutex_new(&err);
-	if (err != ERR_OK) {
-		free(read_buf);
-		free(write_buf);
-		free(res);
-
-		ERR_WITH(err, NULL);
-	}
-
 	return res;
 }
 
@@ -484,11 +469,8 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 	usz to_read;
 	usz res;
 
-	mutex_lock(file->lock);
-
 	if (file->read_buf_pos == file->read_buf_end && cap > file->read_cap) {
 		res = read(file->raw, buf, cap, err_out);
-		mutex_unlock(file->lock);
 		return res;
 	}
 
@@ -496,14 +478,9 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 		usz bytes_read;
 
 		bytes_read = read(file->raw, file->read_buf, file->read_cap, &err);
-		if (err != ERR_OK) {
-			mutex_unlock(file->lock);
-
-			ERR_WITH(err, 0);
-		}
+		TRY_WITH(err, 0);
 
 		if (bytes_read == 0) {
-			mutex_unlock(file->lock);
 			return 0;
 		}
 
@@ -517,16 +494,12 @@ bf_read(BufferedFile ref file, ptr buf, usz cap, err_t ref err_out)
 	memmove(buf, file->read_buf_pos, to_read);
 	file->read_buf_pos = (char ref)file->read_buf_pos + to_read;
 
-	mutex_unlock(file->lock);
-
 	return to_read;
 }
 void
 bf_flush(BufferedFile ref file, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-
-	mutex_lock(file->lock);
 
 	while (file->write_buf_end > file->write_buf_pos) {
 		isz bytes_written;
@@ -537,14 +510,9 @@ bf_flush(BufferedFile ref file, err_t ref err_out)
 			(char*)file->write_buf_end - (char*)file->write_buf_pos,
 			&err
 		);
-		if (err != ERR_OK) {
-			mutex_unlock(file->lock);
-
-			ERR_VOID(err);
-		}
+		TRY_VOID(err);
 
 		if (bytes_written == 0) {
-			mutex_unlock(file->lock);
 			return;
 		}
 
@@ -553,26 +521,17 @@ bf_flush(BufferedFile ref file, err_t ref err_out)
 
 	file->write_buf_pos = file->write_buf;
 	file->write_buf_end = file->write_buf;
-
-	mutex_unlock(file->lock);
 }
 usz
 bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
-	mutex_lock(file->lock);
-
 	if ((char ref)file->write_buf_end + cap > (char ref)file->write_buf + file->write_cap) {
 		bf_flush(file, &err);
-		if (err != ERR_OK) {
-			mutex_unlock(file->lock);
-
-			ERR_WITH(err, 0);
-		}
+		TRY_WITH(err, 0);
 
 		if (file->write_buf_pos < file->write_buf_end) {
-			mutex_unlock(file->lock);
 			return 0;
 		}
 
@@ -582,7 +541,6 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 			file->write_buf_pos = file->write_buf;
 			file->write_buf_end = (char ref)file->write_buf + cap;
 			memmove(file->write_buf, buf, cap);
-			mutex_unlock(file->lock);
 			return cap;
 		}
 	} else {
@@ -593,12 +551,10 @@ bf_write(BufferedFile ref file, const ptr buf, usz cap, err_t ref err_out)
 		if (((char ref)file->write_buf_end)[-1] == '\n') {
 			bf_flush(file, &err);
 			if (file->write_buf_pos < file->write_buf_end) {
-				mutex_unlock(file->lock);
 				return 0;
 			}
 		}
 
-		mutex_unlock(file->lock);
 		return cap;
 	}
 }
@@ -612,7 +568,7 @@ bf_close(BufferedFile ref file, err_t ref err_out)
 	free(file->read_buf);
 	free(file->write_buf);
 	close(file->raw, err_out);
-	free(file->lock);
+	free(file->raw);
 }
 usz
 bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out)
@@ -634,24 +590,109 @@ bf_misc(BufferedFile ref file, enum FILE_OP op, err_t ref err_out)
 	return r;
 }
 
+struct LockedFile {
+	FILE ptrs;
+	FILE ref raw;
+	mutex_t own lock;
+};
+
+static LockedFile own locked_stdin;
+static LockedFile own locked_stdout;
+static LockedFile own locked_stderr;
+
+usz lf_read(LockedFile ref file, ptr buf, usz cap, err_t ref err_out);
+usz lf_write(LockedFile ref file, const ptr buf, usz cap, err_t ref err_out);
+void lf_close(LockedFile ref file, err_t ref err_out);
+usz lf_misc(LockedFile ref file, enum FILE_OP op, err_t ref err_out);
+FILE locked_file_ptrs = {
+	(FILE_read_t)lf_read,   /* read */
+	(FILE_write_t)lf_write, /* write */
+	(FILE_close_t)lf_close, /* close */
+	(FILE_run_t)lf_misc,    /* run */
+	0,                      /* ungot */
+	false,                  /* has_ungot */
+};
+
+LockedFile own
+lf_new(FILE own file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	LockedFile own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->ptrs = locked_file_ptrs;
+	res->raw = file;
+
+	res->lock = mutex_new(&err);
+	if (err != ERR_OK) {
+		close(file, NULL);
+		free(file);
+		free(res);
+	}
+
+	return res;
+
+}
+
+usz
+lf_read(LockedFile ref file, ptr buf, usz cap, err_t ref err_out)
+{
+	usz res;
+	mutex_lock(file->lock);
+	res = read(file->raw, buf, cap, err_out);
+	mutex_unlock(file->lock);
+	return res;
+}
+usz
+lf_write(LockedFile ref file, const ptr buf, usz cap, err_t ref err_out)
+{
+	usz res;
+	mutex_lock(file->lock);
+	res = write(file->raw, buf, cap, err_out);
+	mutex_unlock(file->lock);
+	return res;
+}
+void
+lf_close(LockedFile ref file, err_t ref err_out)
+{
+	/* WARN: assume file will only be closed ONCE,
+	 * no locking needed
+	 */
+
+	free(file->lock);
+	close(file->raw, err_out);
+	free(file->raw);
+}
+usz
+lf_misc(LockedFile ref file, enum FILE_OP op, err_t ref err_out)
+{
+	usz res;
+	mutex_lock(file->lock);
+	res = run_op(file->raw, op, err_out);
+	mutex_unlock(file->lock);
+	return res;
+}
+
 static void
 ministd_io_cleanup(void)
 {
 	err_t err = ERR_OK;
 
-	bf_close(buffered_stdin, &err);
+	lf_close(locked_stdin, &err);
 	if (err != ERR_OK) {
 		perror(err, "Error while closing stdin");
 		err = ERR_OK;
 	}
-	free(buffered_stdin);
+	free(locked_stdin);
 
-	bf_close(buffered_stdout, &err);
+	lf_close(locked_stdout, &err);
 	if (err != ERR_OK) {
 		perror(err, "Error while closing stdout");
 		err = ERR_OK;
 	}
-	free(buffered_stdout);
+	free(locked_stdout);
 
 	/*
 	 * don't really need to close stdin/out/err I don't think,
@@ -662,7 +703,7 @@ ministd_io_cleanup(void)
 	 */
 }
 static usz
-stdin_read(struct BufferedFile ref this, ptr buf, usz cap, err_t ref err_out)
+stdin_read(struct LockedFile ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	/* tie stdin to stdout -- TODO: Allow this with buffered files in general? */
 	err_t err = ERR_OK;
@@ -670,10 +711,10 @@ stdin_read(struct BufferedFile ref this, ptr buf, usz cap, err_t ref err_out)
 	flush(stdout, &err);
 	TRY_WITH(err, 0);
 
-	return bf_read(this, buf, cap, err_out);
+	return lf_read(this, buf, cap, err_out);
 }
 static usz
-stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
+stderr_write(struct LockedFile ref this, ptr buf, usz cap, err_t ref err_out)
 {
 	/* tie stderr to stdout */
 	err_t err = ERR_OK;
@@ -684,7 +725,7 @@ stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 	 * write to stderr regardless of if flushing stdout was successful.
 	 */
 
-	res = raw_file_write(this, buf, cap, err_out);
+	res = lf_write(this, buf, cap, err_out);
 	/* manual TRY_WITH here, if flush failed and write didn't */
 	if (err != ERR_OK && err_out != NULL && *err_out != ERR_OK) {
 		ERR_WITH(err, -1);
@@ -693,33 +734,67 @@ stderr_write(struct RAW_FILE ref this, ptr buf, usz cap, err_t ref err_out)
 	return res;
 }
 void
-ministd_io_init(void)
+_ministd_io_init(void)
 {
 	err_t err = ERR_OK;
 
-	raw_stderr.ptrs = raw_file_ptrs;
-	raw_stderr.ptrs.write = (FILE_write_t)stderr_write;
-	raw_stderr.fd = 2;
-	stderr = (FILE ref)&raw_stderr;
-
-	raw_stdin.ptrs = raw_file_ptrs;
-	raw_stdin.fd = 0;
-	buffered_stdin = bf_new((FILE*)&raw_stdin, &err);
+	raw_stderr = alloc(sizeof(*raw_stderr), &err);
 	if (err != ERR_OK) {
-		perror(err, "Error while initialising stdin");
-		exit(127);
-	}
-	buffered_stdin->ptrs.read = (FILE_read_t)stdin_read;
-	stdin = (FILE ref)buffered_stdin;
+		const char msg[] = "Failed allocating memory for stderr file!\n";
 
-	raw_stdout.ptrs = raw_file_ptrs;
-	raw_stdout.fd = 1;
-	buffered_stdout = bf_new((FILE*)&raw_stdout, &err);
-	if (err != ERR_OK) {
-		perror(err, "Error while initialising stdout");
-		exit(127);
+		fd_write(2 /* stderr */, (ptr)msg, sizeof(msg)/sizeof(*msg), NULL);
+		PANIC(127);
 	}
-	stdout = (FILE ref)buffered_stdout;
+	raw_stderr->ptrs = raw_file_ptrs;
+	raw_stderr->fd = 2;
+	locked_stderr = lf_new((FILE ref)raw_stderr, &err);
+	if (err != ERR_OK) {
+		const char msg[] = "Failed creating locked stderr file\n";
+
+		fd_write(2 /* stderr */, (ptr)msg, sizeof(msg)/sizeof(*msg), NULL);
+		PANIC(127);
+	}
+	locked_stderr->ptrs.write = (FILE_write_t)stderr_write;
+	stderr = (FILE ref)locked_stderr;
+
+	raw_stdin = alloc(sizeof(*raw_stdin), &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while allocating memory for stdin file");
+		PANIC(127);
+	}
+	raw_stdin->ptrs = raw_file_ptrs;
+	raw_stdin->fd = 0;
+	buffered_stdin = bf_new((FILE own)raw_stdin, &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while creating buffered stdin file");
+		PANIC(127);
+	}
+	locked_stdin = lf_new((FILE ref)buffered_stdin, &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while creating locked stdin file");
+		PANIC(127);
+	}
+	locked_stdin->ptrs.read = (FILE_read_t)stdin_read;
+	stdin = (FILE ref)locked_stdin;
+
+	raw_stdout = alloc(sizeof(*raw_stdout), &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while allocating memory for stdout file");
+		PANIC(127);
+	}
+	raw_stdout->ptrs = raw_file_ptrs;
+	raw_stdout->fd = 1;
+	buffered_stdout = bf_new((FILE own)raw_stdout, &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while creating buffered stdout file");
+		PANIC(127);
+	}
+	locked_stdout = lf_new((FILE ref)buffered_stdout, &err);
+	if (err != ERR_OK) {
+		perror(err, "Error while creating locked stdout file");
+		PANIC(127);
+	}
+	stdout = (FILE ref)locked_stdout;
 
 	atexit(ministd_io_cleanup);
 }

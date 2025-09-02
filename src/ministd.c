@@ -48,7 +48,7 @@ exit(int exitcode)
 	lcode = exitcode;
 
 	for (i = 0; i < exithooks_count; ++i) {
-		exithooks[i]();
+		exithooks[exithooks_count - i - 1]();
 	}
 
 	_syscall1(__NR_exit_group, dummy, lcode);
@@ -63,14 +63,22 @@ thread_exit(int exitcode)
 	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();
 }
+void
+panic(isz exitcode)
+{
+	isz dummy;
+
+	_syscall1(__NR_exit, dummy, exitcode);
+	__builtin_unreachable();
+}
 int main(void);
-extern void ministd_io_init(void);
+extern void _ministd_io_init(void);
 void
 setup(void)
 {
 	for (__envc = 0; __envp[__envc] != NULL; ++__envc);
 
-	ministd_io_init();
+	_ministd_io_init();
 }
 void
 _start(void)
@@ -110,5 +118,5 @@ __stack_chk_fail(void)
 	const char msg[] = "Stack smashing detected!\n";
 
 	fd_write(2 /* stderr */, (ptr)msg, sizeof(msg)/sizeof(*msg), NULL);
-	exit(127);
+	PANIC(127);
 }
