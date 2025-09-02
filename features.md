@@ -5,7 +5,46 @@ along with their test coverage.
 
 I will also document some of the process/decisions behind their implementation.
 
-## Prelude
+## Table of Contents
+
+ 1. [Prelude](#prelude-anchor)
+ 2. [Headers](#headers-anchor)
+    1. [Core](#headers-core-anchor)
+       1. [`<ministd.h>`](#ministd_h-anchor)
+       2. [`<ministd_types.h>`](#ministd_types_h-anchor)
+       3. [`<ministd_error.h>`](#ministd_error_h-anchor)
+       4. [`<ministd_syscall.h>`](#ministd_syscall_h-anchor)
+       5. [`<ministd_memory.h>`](#ministd_memory_h-anchor)
+    2. [Data](#headers-data-anchor)
+       1. [`<ministd_string.h>`](#ministd_string_h-anchor)
+    3. [IO](#headers-io-anchor)
+       1. [`<ministd_io.h>`](#ministd_io_h-anchor)
+       2. [`<ministd_fmt.h>`](#ministd_fmt_h-anchor)
+       3. [`<ministd_term.h>`](#ministd_term_h-anchor)
+       4. [`<ministd_poll.h>`](#ministd_poll_h-anchor)
+    4. [Concurrency](#headers-concurrency-anchor)
+       1. [`<ministd_atomic.h>`](#ministd_atomic_h-anchor)
+       2. [`<ministd_sched.h>`](#ministd_sched_h-anchor)
+       2. [`<ministd_threads.h>`](#ministd_threads_h-anchor)
+    5. [Misc](#headers-misc-anchor)
+       1. [`<ministd_time.h>`](#ministd_time_h-anchor)
+ 3. [Core](#core-anchor)
+    1. [Startup and exit](#startup_exit-anchor)
+       1. [`_start`](#fn-_start-anchor)
+       2. [`atexit`](#fn-atexit-anchor)
+       3. [`exit` and `thread_exit`](#fn-exit-thread_exit-anchor)
+       4. [`panic` and `PANIC`](#fn-panic-PANIC-anchor)
+    2. [Interacting with `argv` and `envp`](#interacting_argv_envp-anchor)
+    3. [Basic types](#basic_types-anchor)
+    4. [Basic types](#own_ref-anchor)
+    5. [Errors interface](#errors-anchor)
+ 4. [IO](#io-anchor)
+ 5. [Concurrency](#concurrency-anchor)
+ 6. [Memory management](#memory_management-anchor)
+ 7. [Misc](#misc-anchor)
+    1. [`__stack_chk_fail`](#fn-__stack_chk-fail-anchor)
+
+## Prelude <a name="prelude-anchor"></a>
 
 The header `<_ministd_prelude.h>` provides a core set of functionality
 that is available everywhere,
@@ -33,11 +72,11 @@ thereby having the same initial bytes as a `FILE` struct)
 
 TODO shouldn't the `FILE` typedef be moved to `<ministd_types.h>`?
 
-## Headers
+## Headers <a name="headers-anchor"></a>
 
-### Core
+### Core <a name="headers-core-anchor"></a>
 
-#### `<ministd.h>`
+#### `<ministd.h>` <a name="ministd_h-anchor"></a>
 
 _STABLE_
 
@@ -45,7 +84,7 @@ _STABLE_
 
 Basic functions to do with startup, exit, and interacting with the environment.
 
-#### `<ministd_types.h>`
+#### `<ministd_types.h>` <a name="ministd_types_h-anchor"></a>
 
 _STABLE_
 
@@ -58,7 +97,7 @@ Also includes the `#define`s for the different pointer types
 used for ownership tracking,
 more on that later.
 
-#### `<ministd_error.h>`
+#### `<ministd_error.h>` <a name="ministd_error_h-anchor"></a>
 
 _STABLE_
 
@@ -66,7 +105,7 @@ _STABLE_
 
 Defines the error propagation/reporting interface of the library.
 
-#### `<ministd_syscall.h>`
+#### `<ministd_syscall.h>` <a name="ministd_syscall_h-anchor"></a>
 
 _SEMI-INTERNAL_
 
@@ -85,7 +124,7 @@ however I am considering moving it to `<_ministd_syscall.h>` to mark it internal
 as the library is getting more full-featured.
 This should especially be done if/when multi-platform support is added.
 
-#### `<ministd_memory.h>`
+#### `<ministd_memory.h>` <a name="ministd_memory_h-anchor"></a>
 
 _TENTATIVE_
 
@@ -105,9 +144,9 @@ Unfortunately, support for the use of custom allocators
 is not widespread through the rest of the library,
 so it is mostly a curiosity at the current point in time.
 
-### Data
+### Data <a name="headers-data-anchor"></a>
 
-#### `<ministd_string.h>`
+#### `<ministd_string.h>` <a name="ministd_string_h-anchor"></a>
 
 _REDESIGN PENDING_
 
@@ -123,9 +162,9 @@ and is currently something of a mess.
 At some point it will be redesigned,
 and I recommend avoiding its use until then.
 
-### IO
+### IO <a name="headers-io-anchor"></a>
 
-#### `<ministd_io.h>`
+#### `<ministd_io.h>` <a name="ministd_io_h-anchor"></a>
 
 _STABLE_
 
@@ -147,7 +186,7 @@ raw files, buffered files, string files, sockets, etc.
 but the point is that they could easily be added
 without touching the code in `ministd_io.c` or `<ministd_io.h>`)
 
-#### `<ministd_fmt.h>`
+#### `<ministd_fmt.h>` <a name="ministd_fmt_h-anchor"></a>
 
 _TENTATIVE_
 
@@ -170,7 +209,7 @@ probably also involved me not wanting to
 spend the time to learn how to use variadics in C,
 especially without stdlib support...
 
-#### `<ministd_term.h>`
+#### `<ministd_term.h>` <a name="ministd_term_h-anchor"></a>
 
 _DEVELOPING_
 
@@ -179,7 +218,7 @@ _DEVELOPING_
 Contains various functions and constants
 for writing formatted output to the terminal.
 
-#### `<ministd_poll.h>`
+#### `<ministd_poll.h>` <a name="ministd_poll_h-anchor"></a>
 
 _STABLE_
 
@@ -187,9 +226,9 @@ _STABLE_
 
 Provides polling functionality to poll file descriptors.
 
-### Concurrency
+### Concurrency <a name="headers-concurrency-anchor"></a>
 
-#### `<ministd_atomic.h>`
+#### `<ministd_atomic.h>` <a name="ministd_atomic_h-anchor"></a>
 
 _STABLE_
 
@@ -207,7 +246,7 @@ is just a thin wrapper over the corresponding integer type,
 and that this design is unlikely to change in the future
 to do some pointer typecasting and interact directly with the raw bytes.
 
-#### `<ministd_sched.h>`
+#### `<ministd_sched.h>` <a name="ministd_sched_h-anchor"></a>
 
 _STABLE_
 
@@ -222,7 +261,7 @@ Turns out just doing half of it in assembly
 was easier than fighting my C compiler,
 who knew?)
 
-#### `<ministd_threads.h>`
+#### `<ministd_threads.h>` <a name="ministd_threads_h-anchor"></a>
 
 _BUDDING_
 
@@ -233,9 +272,9 @@ Currently just provides a mutex lock.
 In the future, I plan on also supporting futexes and threadpools
 through this header too.
 
-### Misc
+### Misc <a name="headers-misc-anchor"></a>
 
-#### `<ministd_time.h>`
+#### `<ministd_time.h>` <a name="ministd_time_h-anchor"></a>
 
 _BUDDING_
 
@@ -246,11 +285,11 @@ including a more low-level `nanosleep`
 which stays close to the way the syscall works for maximum control,
 and more high-level functions like `sleep` which handles details automatically.
 
-## Core
+## Core <a name="core-anchor"></a>
 
-### Startup and exit
+### Startup and exit <a name="startup_exit-anchor"></a>
 
-#### `_start`
+#### `_start` <a name="fn-_start-anchor"></a>
 
 A custom `_start` function is supplied to set up the environment
 and run the user's `main` function,
@@ -269,7 +308,7 @@ and lastly calls the `main` function,
 In `setup`, `envc` (the number of environment variables) is determined,
 before setup functions from the various components of ministdlib is called.
 
-#### `atexit`
+#### `atexit` <a name="fn-atexit-anchor"></a>
 
 An `atexit` function is supplied
 for scheduling cleanup functions to run before program exit.
@@ -324,7 +363,7 @@ main(void)
 }
 ```
 
-#### `exit` and `thread_exit`
+#### `exit` and `thread_exit` <a name="fn-exit-thread_exit-anchor"></a>
 
 Two program termination functions are provided:
 `exit` and `thread_exit`.
@@ -342,7 +381,7 @@ When you make use of the concurrency interface,
 then the provided functions should automatically
 call the appropriate exit function once the child process's function completes.
 
-#### `panic` and `PANIC`
+#### `panic` and `PANIC` <a name="fn-panic-PANIC-anchor"></a>
 
 `panic` is a third termination function,
 equivalent to `exit` except that no exit hooks are run.
@@ -376,7 +415,7 @@ main(void)
 }
 ```
 
-### Interacting with `argv` and `envp`
+### Interacting with `argv` and `envp` <a name="interacting_argv_envp-anchor"></a>
 
 Command line arguments can be accessed through the `argv()` function,
 with the number of command line arguments supplied by `argc()`.
@@ -423,7 +462,7 @@ main(void)
 }
 ```
 
-### Basic types
+### Basic types <a name="basic_types-anchor"></a>
 
 The basic types defined in `ministd_types.h` are:
 `usz`, `isz`, `ptr`, `own_ptr`, and `bool`.
@@ -431,12 +470,12 @@ The basic types defined in `ministd_types.h` are:
 There are two values defined:
 `NULL`, `true`, and `false`.
 
-### `own` and `ref` pointers
+### `own` and `ref` pointers <a name="own_ref-anchor"></a>
 
 There are two aliases to the pointer (`*`) to differentiate ownership:
 `own` and `ref`.
 
-### Errors interface
+### Errors interface <a name="errors-anchor"></a>
 
 Errors are based around the `err_t` enumeration,
 containing `ERR_OK` indicating a lack of an error,
@@ -455,7 +494,7 @@ for working with error codes:
  - `err_str(err)`
  - `perror(err, s)`
 
-## IO
+## IO <a name="io-anchor"></a>
 
 I/O revolves around the `FILE` interface,
 which is forward declared in the prelude header
@@ -463,17 +502,17 @@ and defined in `ministd_io.h`.
 
 ...
 
-## Concurrency
+## Concurrency <a name="concurrency-anchor"></a>
 
 ...
 
-## Memory management
+## Memory management <a name="memory_management-anchor"></a>
 
 ...
 
-## Misc
+## Misc <a name="misc-anchor"></a>
 
-#### `__stack_chk_fail`
+### `__stack_chk_fail` <a name="fn-__stack_chk_fail-anchor"></a>
 
 `ministd.h` also provides a `__stack_chk_fail` function,
 which is run whenever the program detects stack smashing
