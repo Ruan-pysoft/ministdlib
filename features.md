@@ -696,25 +696,88 @@ main(void)
 }
 ```
 
+### Syscall wrapper
+
+**NOTE**: currently this wrapper is publicly exposed through `<ministd_syscall.h>`,
+but I will likely hide it as an implementation detail in the future
+(perhaps by moving it to `<_ministd_syscall.h>`)
+
+### Memory management
+
+## Data
+
+### Strings support
+
 ## IO
 
 I/O revolves around the `FILE` interface,
 which is forward declared in the prelude header
 and defined in `ministd_io.h`.
 
-...
+### Basic file interface
+
+#### `struct FILE` and `FILE_read_t`, `FILE_write_t`, `FILE_close_t`, `FILE_run_t`
+
+**Provided by**: `<ministd_io.h>`
+
+#### Low-level IO – `read`, `write`
+
+**Provided by**: `<ministd_io.h>`
+
+#### Other operations – `close`, `run_op`, `flush`, `ungetc`, `peekc`
+
+**Provided by**: `<ministd_io.h>`
+
+### Basic IO interface
+
+#### `stdin`, `stdout`, and `stderr`
+
+**Provided by**: `<ministd_io.h>`
+**Provided by**: `<ministd_fmt.h>`
+
+#### Higher-level output – `fputs`, `fputc`, `puts`, `putc`
+
+**Provided by**: `<ministd_io.h>`
+
+#### Higher-level input – `fgets`, `fgetc`, `fgetline`, `gets`, `getc`, `getline`
+
+**Provided by**: `<ministd_io.h>`
+
+### Basic file types
+
+#### Creating a basic file – `open`, `from_fd`
+
+**Provided by**: `<ministd_io.h>`
+
+#### File descriptors – `fd_open`, `fd_read`, `fd_write`, `fd_close`
+
+**Provided by**: `<ministd_io.h>`
+
+#### Buffered files – `BufferedFile`, `bf_new`, `bf_new_from`
+
+**Provided by**: `<ministd_io.h>`
+
+#### Locked Files – `LockedFile`, `lf_new`
+
+**Provided by**: `<ministd_io.h>`
+
+### Formatted IO interface
+
+### Formatted terminal output
 
 ## Concurrency
 
-...
+### Atomics
 
-## Memory management
+### Spawning subprocesses
 
-...
+### Locks
 
 ## Misc
 
-#### `__stack_chk_fail`
+### Timing and waiting
+
+### `__stack_chk_fail`
 
 **Provided by**: not exposed through headers, defined in `ministd.c`
 
