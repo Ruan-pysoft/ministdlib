@@ -716,17 +716,94 @@ and defined in `ministd_io.h`.
 
 ### Basic file interface
 
-#### `struct FILE` and `FILE_read_t`, `FILE_write_t`, `FILE_close_t`, `FILE_run_t`
+#### `struct FILE`, `enum FILE_OP` and `FILE_read_t`, `FILE_write_t`, `FILE_close_t`, `FILE_run_t`
 
 **Provided by**: `<ministd_io.h>`
+
+The IO interface of ministdlib is built around the `FILE` struct.
+The `FILE` struct is, for the most part, a table of file pointers
+which are used to run operations on a file object.
+
+Along with that, it also comes with a single character buffer
+to support "un-getting" a character from input files.
+
+There are four required function pointers:
+
+ - `FILE_read_t` takes in the file, a mutable buffer with a size, and an `err_out` parameter, returning `usz`
+
+   The read function will attempt
+   to read up to `cap` number of bytes into the buffer,
+   returning the number of bytes read.
+
+ - `FILE_write_t` takes in the file, a constant buffer with a size, and an `err_out` parameter, returning `usz`
+
+   The write function will attempt
+   to write up to `cap` number of bytes from the buffer to the file,
+   returning the number of bytes written.
+
+ - `FILE_close_t` takes in only the file and an `err_out` parameter, not returning a value
+
+   The close function should close the file
+   and clean up any resources it might own.
+   After closing, a file's memory may be deallocated.
+
+ - `FILE_run_t` takes the file, a `FILE_OP`, and an `err_out` parameter, returning `usz`
+
+   The run function's behaviour depends on the operation it is instructed to run.
+
+There are currently three different file operations:
+
+ - `FO_FLUSH` flushes a buffered file, does nothing otherwise
+ - `FO_HASFD` returns `1` if the file has a file descriptor, `0` otherwise
+ - `FO_GETFD` returns the file's file descriptor if it exists,
+   otherwise it errors with `ERR_BADF`
 
 #### Low-level IO – `read`, `write`
 
 **Provided by**: `<ministd_io.h>`
 
+`read` and `write` both takes a file, a buffer, the size of the buffer, and `err_out`.
+They are thin wrappers over
+`file->read(file, buf, cap, err_out)` and `file->write(file, buf, cap, err_out)`.
+
+`read` takes a mutable buffer,
+and tries to read up to `cap` bytes of data from `file` into `buf`,
+returning the number of bytes read.
+
+`write` takes a constant buffer,
+and tries to write up to `cap` bytes of data from `buf` to `file`,
+returning the number of bytes written.
+
 #### Other operations – `close`, `run_op`, `flush`, `ungetc`, `peekc`
 
 **Provided by**: `<ministd_io.h>`
+
+`close` is a thin wrapper over `file->close(file, err_out)`.
+It cleans up any resources owned by the file,
+and closes the file.
+After closing it is safe to deallocate the file's memory,
+and the file should not be used again after calling `close` on it.
+
+`run_op` is a thin wrapper over `file->run(file, op, err_out)`.
+
+There are currently three different file operations:
+
+ - `FO_FLUSH` flushes a buffered file, does nothing otherwise
+ - `FO_HASFD` returns `1` if the file has a file descriptor, `0` otherwise
+ - `FO_GETFD` returns the file's file descriptor if it exists,
+   otherwise it errors with `ERR_BADF`
+
+`flush` is a thin wrapper over `file->run(file, FO_FLUSH, err_out)`,
+and it simply flushes a buffered file's buffers.
+
+`ungetc` stores a character in a file's `ungot` buffer,
+erroring with `ERR_PERM` if there is already an ungotten character.
+
+`peekc` tries to "peek" into the file,
+returning the peeked character as an `int`,
+returning `-1` if there is no data to be read from the file
+(that is, there is no ungotten character
+and calling `read` reads zero characters but doesn't error).
 
 ### Basic IO interface
 
