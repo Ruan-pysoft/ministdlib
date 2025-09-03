@@ -452,8 +452,27 @@ _Part of the prelude_
 The basic types defined in `ministd_types.h` are:
 `usz`, `isz`, `ptr`, `own_ptr`, and `bool`.
 
-There are two values defined:
+`usz` and `isz` are signed and unsigned 64-bit integers
+(typedef'd `unsigned long long` and `long long`).
+
+`ptr` and `own_ptr` are simply aliases to `void ref` and `void own`,
+to be used when a generic pointer is required (no type information).
+
+`bool` is simply an `int`,
+but logically functions as a boolean type.
+When working with conditionals,
+it is recommended to use `bool` rather than int,
+just as documentation/to provide clarity.
+Booleans should also only be assigned the values `true` or `false`,
+rather than an arbritrary integer value,
+though this is in no way enforced.
+
+There are three values defined:
 `NULL`, `true`, and `false`.
+
+`NULL` is the null pointer, `((void*)0)`.
+
+`true` and `false` are just aliases for `1` and `0` respectively.
 
 ### `own` and `ref` pointers
 
@@ -463,6 +482,37 @@ _Part of the prelude_
 
 There are two aliases to the pointer (`*`) to differentiate ownership:
 `own` and `ref`.
+
+An `own` pointer is a pointer to owned memory,
+meaning that the function is responsible for cleanup.
+
+`ref`, meanwhile, is a pointer to non-owned memory.
+
+If a function declares an `own` pointer or receives an `own` pointer,
+then it _has_ to do one of the following _exactly once_ in each branch of execution,
+unless it is the null pointer:
+ - return it, if the return type is also marked `own`
+ - pass it to another function as an `own` parameter
+ - assign it as an `own` member of a struct,
+   cleaning up the previous value if need be
+The only exception to these requirements are memory-freeing functions,
+which in some sense are "sinks",
+the last place that handles all `own` pointers eventually.
+
+`own` pointers can be passed as `ref` parameters,
+assigned to `ref` pointers, etc,
+but those are just copies;
+the original `own` must still be handled and not just discarded.
+
+Similarly, you cannot do the following to a `ref` pointer:
+ - return it as an `own` pointer
+ - pass it as an `own` parameter
+ - assign it to an `own` member of a struct
+ - assign it to a variable declard as an `own` pointer
+
+TODO create an example here
+(not quite sure how I'd go about it,
+but demonstrate what should and shouldn't be done with `own`s and `ref`s)
 
 ### Errors interface
 
@@ -475,7 +525,16 @@ containing `ERR_OK` indicating a lack of an error,
 various error codes from the Linux errno interface,
 and a few custom errors added as its needed in the library.
 
-It also provides five standard macros and three functions
+**IMPORTANT**: whenever an `err_t` variable is declared,
+**always** initialise it with `ERR_OK`:
+
+```c
+err_t err = ERR_OK; /* this is good */
+...
+err_t err; /* this is *bad* */
+```
+
+It also provides five macros and three functions
 for working with error codes:
 
  - `SET_ERR(err)`
@@ -486,6 +545,134 @@ for working with error codes:
  - `err_repr(err)`
  - `err_str(err)`
  - `perror(err, s)`
+
+All functions that can error MUST take an `err_t ref err_out` parameter;
+note that the name is `err_out`,
+which is required to use the various error propagation macros!
+Furthermore, for a consistent, clean interface,
+it is recommended to take this as the *last* parameter of the function.
+
+When calling a function that could error,
+the consumer may pass a pointer to an `err_t` to handle potential errors,
+or pass `NULL` to ignore any errors.
+
+If such a function runs without any error,
+it should leave the `err_out` argument untouched,
+meaning that if a pointer to an `err_t` initialised with `ERR_OK` was passed
+it will still be `ERR_OK` after the function has run.
+
+If such a function does error **and** it has not been passed `NULL` for `err_out`,
+then it should write an error code *other than* `ERR_OK` to `err_out`.
+Therefore, if a pointer to an `err_t` was passed
+it will now contain the error code indicating what went wrong.
+
+#### Error setting and propagation
+
+Since it requires quite some boilerplate
+to check the `err_out` argument against `NULL`
+before touching it each time,
+the five error-handling macros are provided:
+
+`SET_ERR(err)` sets `err_out` to `err` if it is not `NULL`.
+That is, it is equivalent to `if (err_out != NULL) *err_out = err;`.
+
+`ERR_WITH(err, val)` sets `err_out` before returning `val`.
+That is, it is equivalent to `SET_ERR(err); return val;`.
+
+`ERR_VOID(err)` sets `err_out` before returning from a void function.
+That is, it is equivalent to `SET_ERR(err); return;`.
+
+`TRY_WITH(err, val)` checks if `err` is not `ERR_OK`,
+and errors with `val` if so.
+That is, it is equivalent to `if (err != ERR_OK) ERR_WITH(err, val);`.
+
+`TRY_VOID(err)` checks if `err` is not `ERR_OK`,
+and errors if so.
+That is, it is equivalent to `if (err != ERR_OK) ERR_VOID(err);`.
+
+#### Error display
+
+Three functions are provided for displaying errors.
+
+`err_repr` returns a `const char ref`
+containing the enum variant used for that error number.
+For example, `err_repr(ERR_OK)` returns `"ERR_OK"`
+and `err_repr(ERR_OVERFLOW)` returns `"ERR_OVERFLOW"`.
+
+`err_str` returns a `const char ref` containing a description of the error.
+For example, `err_str(ERR_OK)` returns `"No error"`,
+and `err_repr(ERR_OVERFLOW)` returns `"Operation would result in overflow"`.
+
+`perror` takes an error and optional message (pass `NULL` for no message),
+and displays the message first (if provided)
+and then the `err_str` of the error to stderr.
+So `perror(ERR_OVERFLOW, "doing some math")`
+would display `doing some math: operation would result in overflow`.
+
+#### Example
+
+```c
+#include <ministd_io.h>
+#include <ministd_fmt.h>
+
+void
+no_error(err_t ref err_out)
+{
+	int the_answer;
+
+	the_answer = 6;
+	the_answer *= 7;
+
+	if (the_answer != 42) {
+		/* Something went very wrong! */
+		ERR_VOID(ERR_AGAIN);
+	}
+
+	prints("Look ma, no errors!\n", NULL);
+
+	/* What's the question though? */
+}
+
+void
+somethings_wrong(err_t ref err_out)
+{
+	char msg[] = "this file doesn't exist!";
+
+	/* let's try writing to a random file! */
+	fd_write(10, msg, sizeof(msg)/sizeof(*msg), err_out);
+
+	/* note that I'm not doing more stuff after the call,
+	 * so I can just provide the function with the same err_out variable
+	 * and not worry about error handling or early returns
+	 */
+}
+
+int
+main(void)
+{
+	err_t err = ERR_OK;
+
+	prints("Hello, world!\n", &err);
+	if (err != ERR_OK) {
+		perror(err, "While printing hello world");
+		return 1;
+	}
+
+	no_error(&err);
+	if (err != ERR_OK) {
+		perror(err, "While running no_error");
+		return 1;
+	}
+
+	somethings_wrong(&err);
+	if (err != ERR_OK) {
+		perror(err, "While running somethings_wrong");
+		return 1;
+	}
+
+	return 0;
+}
+```
 
 ## IO
 
