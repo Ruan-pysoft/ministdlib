@@ -5,6 +5,11 @@ along with their test coverage.
 
 I will also document some of the process/decisions behind their implementation.
 
+Note that I do not provide the full type signature of each function;
+to find that navigate to the header I indicated the function can be found in
+(located in the `include/` directory)
+and search for the name of the function.
+
 ## Prelude
 
 The header `<_ministd_prelude.h>` provides a core set of functionality
@@ -812,13 +817,59 @@ and calling `read` reads zero characters but doesn't error).
 **Provided by**: `<ministd_io.h>`
 **Provided by**: `<ministd_fmt.h>`
 
+Interfaces to the standard input, output, and error streams.
+
+All of them are `LockedFile`s,
+in order to allow concurrent access.
+
+Additionally, `stdin` and `stdout` are buffered,
+with `stdin` being "tied" to `stdout`:
+before a `read` is performed on `stdin`,
+`stdout` is first flushed.
+
 #### Higher-level output – `fputs`, `fputc`, `puts`, `putc`
 
 **Provided by**: `<ministd_io.h>`
 
+`fputs` takes a null-terminated string as an argument,
+which it will then write to the file in a loop
+until the whole string has been written,
+returning the length of the string.
+This allows the user to not worry about partial writes
+or determining the length of a buffer themselves.
+
+`fputc` tries to write a single character to the file,
+returning the written character.
+
+Both `fputs` and `fputc` errors with `ERR_IO`
+when a call to `write` results in zero bytes written.
+
+`puts` takes a null-terminated string but no file,
+using `fputs` to write the string to `stdout`,
+before writing a newline to `stdout`.
+
+`putc` is a thin wrapper over `fputs(c, stdout, err_out)`.
+
 #### Higher-level input – `fgets`, `fgetc`, `fgetline`, `gets`, `getc`, `getline`
 
 **Provided by**: `<ministd_io.h>`
+
+`gets`, `getc`, and `getline` are thin wrappers
+over `fgets`, `fgetc`, and `fgetline` respectively
+passing `stdin` as the file argument.
+
+`fgets` tries to read a space-delimited word from the input file,
+where a "space" is defined as
+a byte that is less than or equal to the space character.
+If a word is read such that the next character is a space or EOF,
+then `true` is returned, otherwise `false`.
+
+`fgetc` tries to read a single character from the file,
+returning it upon success (cast to an `int`) or `-1` on failure.
+
+`fgetline` tries to read a line into the provided buffer,
+returning `true` if it read up to a newline
+and `false` if it read up to EOF.
 
 ### Basic file types
 
@@ -826,17 +877,46 @@ and calling `read` reads zero characters but doesn't error).
 
 **Provided by**: `<ministd_io.h>`
 
+`open` opens a file descriptor-based `FILE` from a given path.
+Currently all files are created with both the read and write bits set,
+and there is no support for customising the mode the file is opened with.
+
+`from_fd` takes a file descriptor and creates a `FILE own`.
+
 #### File descriptors – `fd_open`, `fd_read`, `fd_write`, `fd_close`
 
 **Provided by**: `<ministd_io.h>`
+
+`fd_open` takes in a path, opens that file, and returns the file descriptor.
+Currently all files are created with both the read and write bits set,
+and there is no support for customising the mode the file is opened with.
+
+`fd_read`, `fd_write`, and `fd_close` function as `read`, `write`, and `close` respectively,
+but taking file descriptors rather than a `FILE` pointers.
 
 #### Buffered files – `BufferedFile`, `bf_new`, `bf_new_from`
 
 **Provided by**: `<ministd_io.h>`
 
+A `BufferedFile` is has a read and write buffer
+so that it can read and write large pieces of data at once,
+reducing the number of syscalls.
+
+`bf_new` wraps a given file into a `BufferedFile`
+using default buffer sizes.
+
+`bf_new_from` wraps a given file into a `BufferedFile`
+taking a read and write buffer as arguments.
+
 #### Locked Files – `LockedFile`, `lf_new`
 
 **Provided by**: `<ministd_io.h>`
+
+A `LockedFile` is a wrapper over another file
+which just protects access to the underlying file behind a mutex lock,
+enabling concurrent access without data races.
+
+`lf_new` wraps the given file in a `LockedFile`.
 
 ### Formatted IO interface
 
