@@ -252,6 +252,10 @@ and more high-level functions like `sleep` which handles details automatically.
 
 #### `_start`
 
+**Provided by**: `<ministd.h>`
+
+_Part of the prelude_
+
 A custom `_start` function is supplied to set up the environment
 and run the user's `main` function,
 which should have the signature `int main(void)`.
@@ -270,6 +274,10 @@ In `setup`, `envc` (the number of environment variables) is determined,
 before setup functions from the various components of ministdlib is called.
 
 #### `atexit`
+
+**Provided by**: `<ministd.h>`
+
+_Part of the prelude_
 
 An `atexit` function is supplied
 for scheduling cleanup functions to run before program exit.
@@ -326,6 +334,10 @@ main(void)
 
 #### `exit` and `thread_exit`
 
+**Provided by**: `<ministd.h>`
+
+_Part of the prelude_
+
 Two program termination functions are provided:
 `exit` and `thread_exit`.
 
@@ -343,6 +355,10 @@ then the provided functions should automatically
 call the appropriate exit function once the child process's function completes.
 
 #### `panic` and `PANIC`
+
+**Provided by**: `<ministd.h>`
+
+_Part of the prelude_
 
 `panic` is a third termination function,
 equivalent to `exit` except that no exit hooks are run.
@@ -377,6 +393,10 @@ main(void)
 ```
 
 ### Interacting with `argv` and `envp`
+
+**Provided by**: `<ministd.h>`
+
+_Part of the prelude_
 
 Command line arguments can be accessed through the `argv()` function,
 with the number of command line arguments supplied by `argc()`.
@@ -425,6 +445,10 @@ main(void)
 
 ### Basic types
 
+**Provided by**: `<ministd_types.h>`
+
+_Part of the prelude_
+
 The basic types defined in `ministd_types.h` are:
 `usz`, `isz`, `ptr`, `own_ptr`, and `bool`.
 
@@ -433,10 +457,18 @@ There are two values defined:
 
 ### `own` and `ref` pointers
 
+**Provided by**: `<ministd_types.h>`
+
+_Part of the prelude_
+
 There are two aliases to the pointer (`*`) to differentiate ownership:
 `own` and `ref`.
 
 ### Errors interface
+
+**Provided by**: `<ministd_error.h>`
+
+_Part of the prelude_
 
 Errors are based around the `err_t` enumeration,
 containing `ERR_OK` indicating a lack of an error,
@@ -475,7 +507,9 @@ and defined in `ministd_io.h`.
 
 #### `__stack_chk_fail`
 
-`ministd.h` also provides a `__stack_chk_fail` function,
+**Provided by**: not exposed through headers, defined in `ministd.c`
+
+`ministd.c` also provides a `__stack_chk_fail` function,
 which is run whenever the program detects stack smashing
 (don't ask me how that is done, that's entirely the compiler's job).
 
