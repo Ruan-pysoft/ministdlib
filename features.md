@@ -763,19 +763,109 @@ and defined in `ministd_io.h`.
 
 ### Formatted IO interface
 
+#### Formatted output – `fprint*`, `print*`
+
+**Provided by**: `<ministd_fmt.h>`
+
+#### Formatted input – `fscan*`, `scan*`
+
+**Provided by**: `<ministd_fmt.h>`
+
 ### Formatted terminal output
+
+#### Cursor movement – `term_csi_cursor_*`, `term_csi_goto_col`, `term_csi_goto`
+
+**Provided by**: `<ministd_term.h>`
+
+#### Clearing – `term_csi_clearscreen*`, `term_csi_clear_line*`
+
+**Provided by**: `<ministd_term.h>`
+
+#### Scrolling – `term_csi_scroll*`
+
+**Provided by**: `<ministd_term.h>`
+
+#### Graphics – `struct TERM_GRAPHICS` and `term_set_graphics`
+
+**Provided by**: `<ministd_term.h>`
+
+### Polling
+
+#### Creating pollfds – `enum poll_flag`, `struct pollfd` and `pollfd_new`, `pollfd_new_from_file`
+
+**Provided by**: `<ministd_poll.h>`
+
+#### Using pollfds – `pollfd_has_events`, `poll`
+
+**Provided by**: `<ministd_poll.h>`
+
+#### Poll list type – `poll_list_t` and `poll_list_new`, `poll_list_free`
+
+**Provided by**: `<ministd_poll.h>`
+
+#### Using poll lists – `poll_list_add*`, `poll_list_remove`, `poll_list_poll`
+
+**Provided by**: `<ministd_poll.h>`
+
+#### Iterating poll lists – `poll_list_first`, `poll_list_next`
+
+**Provided by**: `<ministd_poll.h>`
 
 ## Concurrency
 
 ### Atomics
 
+#### Memory ordering – `enum memory_order` and `memory_fence`
+
+**Provided by**: `<ministd_atomic.h>`
+
+#### Atomic types – `struct Atomic*` and `atomic_new_*`
+
+**Provided by**: `<ministd_atomic.h>`
+
+#### Loading and storing – `atomic_load_*`, `atomic_store_*`, `atomic_swap_*`
+
+**Provided by**: `<ministd_atomic.h>`
+
+#### Arythmetic and bit operations – `atomic_add_*`, `atomic_sub_*`, `atomic_or_*`, `atomic_xor_*`, `atomic_and_*`
+
+**Provided by**: `<ministd_atomic.h>`
+
+#### Min and max – `atomic_min_*`, `atomic_max_*`
+
+**Provided by**: `<ministd_atomic.h>`
+
+#### Compare-exchange – `atomic_compare_exchange_*`
+
+**Provided by**: `<ministd_atomic.h>`
+
 ### Spawning subprocesses
 
+#### `clone`
+
+**Provided by**: `<ministd_sched.h>`
+
+#### `_syscall_clone3`
+
+**Provided by**: `<ministd_sched.h>`
+
 ### Locks
+
+#### Mutex – `mutex_t` and `mutex_new`, `mutex_try_lock`, `mutex_lock`, `mutex_unlock`
+
+**Provided by**: `<ministd_threads.h>`
 
 ## Misc
 
 ### Timing and waiting
+
+#### Low-level sleeping – `struct timespec` and `nanosleep`
+
+**Provided by**: `<ministd_time.h>`
+
+#### High-level sleeping – `millisleep`, `sleep`
+
+**Provided by**: `<ministd_time.h>`
 
 ### `__stack_chk_fail`
 
