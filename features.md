@@ -40,20 +40,20 @@ TODO shouldn't the `FILE` typedef be moved to `<ministd_types.h>`?
   <tr> <th>header</th> <th>status</th> <th>summary</th> </tr>
 </thead>
 <tbody>
-  <tr> <td>`<ministd.h>`</td> <td>stable</td> <td>startup/exit functionality</td> </tr>
-  <tr> <td>`<ministd_types.h>`</td> <td>stable</td> <td>expose unified type interface</td> </tr>
-  <tr> <td>`<ministd_error.h>`</td> <td>stable</td> <td>define unified error interface</td> </tr>
-  <tr> <td>`<ministd_syscall.h>`</td> <td>semi-internal</td> <td>provide wrappers for calling syscalls</td> </tr>
-  <tr> <td>`<ministd_memory.h>`</td> <td>tentative</td> <td>provide memory allocation and management facilities</td> </tr>
-  <tr> <td>`<ministd_string.h>`</td> <td>redesign pending</td> <td>provide dynamic strings</td> </tr>
-  <tr> <td>`<ministd_io.h>`</td> <td>stable</td> <td>provide basic io interface</td> </tr>
-  <tr> <td>`<ministd_fmt.h>`</td> <td>tentative</td> <td>provide formatted io interface</td> </tr>
-  <tr> <td>`<ministd_term.h>`</td> <td>developing</td> <td>facilitate formatted terminal output</td> </tr>
-  <tr> <td>`<ministd_poll.h>`</td> <td>stable</td> <td>expose polling capabilities for file descriptors</td> </tr>
-  <tr> <td>`<ministd_atomic.h>`</td> <td>stable</td> <td>provide atomic types/operations</td> </tr>
-  <tr> <td>`<ministd_sched.h>`</td> <td>stable</td> <td>provide support for spawning subprocess</td> </tr>
-  <tr> <td>`<ministd_threads.h>`</td> <td>budding</td> <td>provide support for multithreading</td> </tr>
-  <tr> <td>`<ministd_time.h>`</td> <td>budding</td> <td>provide timing and waiting functionality</td> </tr>
+  <tr> <td><code>&lt;ministd.h&gt;</code></td> <td>stable</td> <td>startup/exit functionality</td> </tr>
+  <tr> <td><code>&lt;ministd_types.h&gt;</code></td> <td>stable</td> <td>expose unified type interface</td> </tr>
+  <tr> <td><code>&lt;ministd_error.h&gt;</code></td> <td>stable</td> <td>define unified error interface</td> </tr>
+  <tr> <td><code>&lt;ministd_syscall.h&gt;</code></td> <td>semi-internal</td> <td>provide wrappers for calling syscalls</td> </tr>
+  <tr> <td><code>&lt;ministd_memory.h&gt;</code></td> <td>tentative</td> <td>provide memory allocation and management facilities</td> </tr>
+  <tr> <td><code>&lt;ministd_string.h&gt;</code></td> <td>redesign pending</td> <td>provide dynamic strings</td> </tr>
+  <tr> <td><code>&lt;ministd_io.h&gt;</code></td> <td>stable</td> <td>provide basic io interface</td> </tr>
+  <tr> <td><code>&lt;ministd_fmt.h&gt;</code></td> <td>tentative</td> <td>provide formatted io interface</td> </tr>
+  <tr> <td><code>&lt;ministd_term.h&gt;</code></td> <td>developing</td> <td>facilitate formatted terminal output</td> </tr>
+  <tr> <td><code>&lt;ministd_poll.h&gt;</code></td> <td>stable</td> <td>expose polling capabilities for file descriptors</td> </tr>
+  <tr> <td><code>&lt;ministd_atomic.h&gt;</code></td> <td>stable</td> <td>provide atomic types/operations</td> </tr>
+  <tr> <td><code>&lt;ministd_sched.h&gt;</code></td> <td>stable</td> <td>provide support for spawning subprocess</td> </tr>
+  <tr> <td><code>&lt;ministd_threads.h&gt;</code></td> <td>budding</td> <td>provide support for multithreading</td> </tr>
+  <tr> <td><code>&lt;ministd_time.h&gt;</code></td> <td>budding</td> <td>provide timing and waiting functionality</td> </tr>
 </tbody>
 </table>
 
