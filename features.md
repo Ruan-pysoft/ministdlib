@@ -924,9 +924,75 @@ enabling concurrent access without data races.
 
 **Provided by**: `<ministd_fmt.h>`
 
+The following print functions are defined,
+taking an argument of the type indicated:
+
+<table>
+<thead>
+  <tr> <th>function(s)</th> <th>type</th> </tr>
+</thead>
+  <tr> <td><code>fprinth</code> <code>fprinthx</code> <code>fprinthb</code> <code>printh</code> <code>printhx</code> <code>printhb</code></td> <td><code>short</code></td> </tr>
+  <tr> <td><code>fprintuh</code> <code>fprintuhx</code> <code>fprintuhb</code> <code>printuh</code> <code>printuhx</code> <code>printuhb</code></td> <td><code>unsigned short</code></td> </tr>
+  <tr> <td><code>fprinti</code> <code>fprintix</code> <code>fprintib</code> <code>printi</code> <code>printix</code> <code>printib</code></td> <td><code>int</code></td> </tr>
+  <tr> <td><code>fprintui</code> <code>fprintuix</code> <code>fprintuib</code> <code>printui</code> <code>printuix</code> <code>printuib</code></td> <td><code>unsigned int</code></td> </tr>
+  <tr> <td><code>fprintl</code> <code>fprintlx</code> <code>fprintlb</code> <code>printl</code> <code>printlx</code> <code>printlb</code></td> <td><code>long</code></td> </tr>
+  <tr> <td><code>fprintul</code> <code>fprintulx</code> <code>fprintulb</code> <code>printul</code> <code>printulx</code> <code>printulb</code></td> <td><code>unsigned long</code></td> </tr>
+  <tr> <td><code>fprintz</code> <code>fprintzx</code> <code>fprintzb</code> <code>printz</code> <code>printzx</code> <code>printzb</code></td> <td><code>isz</code></td> </tr>
+  <tr> <td><code>fprintuz</code> <code>fprintuzx</code> <code>fprintuzb</code> <code>printuz</code> <code>printuzx</code> <code>printuzb</code></td> <td><code>usz</code></td> </tr>
+  <tr> <td><code>fprints</code> <code>prints</code></td> <td><code>const char ref</code></td> </tr>
+  <tr> <td><code>fprintc</code> <code>printc</code></td> <td><code>char</code></td> </tr>
+  <tr> <td><code>fprintp</code> <code>printp</code></td> <td><code>const ptr</code></td> </tr>
+</table>
+
+All `print*` functions are just wrappers over `fprint*(..., stdout, err_out)`.
+
+`fprint*` and `print*` returns the number of bytes written to the file.
+
+Integer types get three variants of the print function:
+ - `fprint_` prints the integer in base ten
+ - `fprint_x` prints the integer in base sixteen (hexadecimal)
+ - `fprint_b` prints the integer in base two (binary)
+
+`fprints` just prints the provided string to the file,
+and is just a wrapper around `fputs`.
+
+`fprintc` just prints the provided character to the file,
+and is just a wrapper around `fputc`.
+
+`fprintp` prints the address of the provided pointer as a hexadecimal value.
+
 #### Formatted input – `fscan*`, `scan*`
 
 **Provided by**: `<ministd_fmt.h>`
+
+The following scan functions are defined,
+returning an argument of the type indicated:
+
+<table>
+<thead>
+  <tr> <th>function(s)</th> <th>type</th> </tr>
+</thead>
+  <tr> <td><code>fscanh</code> <code>scanh</code></td> <td><code>short</code></td> </tr>
+  <tr> <td><code>fscanuh</code> <code>scanuh</code></td> <td><code>unsigned short</code></td> </tr>
+  <tr> <td><code>fscani</code> <code>scani</code></td> <td><code>int</code></td> </tr>
+  <tr> <td><code>fscanui</code> <code>scanui</code></td> <td><code>unsigned int</code></td> </tr>
+  <tr> <td><code>fscanl</code> <code>scanl</code></td> <td><code>long</code></td> </tr>
+  <tr> <td><code>fscanul</code> <code>scanul</code></td> <td><code>unsigned long</code></td> </tr>
+  <tr> <td><code>fscanz</code> <code>scanz</code></td> <td><code>isz</code></td> </tr>
+  <tr> <td><code>fscanuz</code> <code>scanuz</code></td> <td><code>usz</code></td> </tr>
+  <tr> <td><code>fscans</code> <code>scans</code></td> <td><code>char own</code></td> </tr>
+  <tr> <td><code>fscanc</code> <code>scanc</code></td> <td><code>char</code></td> </tr>
+</table>
+
+All `scan*` functions are just wrappers over `fscan*(stdin, err_out)`.
+
+`fscanc` is just a wrapper over `fgetc`
+and gets a single character from the file.
+
+`fscans` is a wrapper of `fgets` with an automatically growing buffer,
+which will continue reading from the file until a whole word has been read.
+
+The other `fscan*` functions just reads an integer value from the input file.
 
 ### Formatted terminal output
 
