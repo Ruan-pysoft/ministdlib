@@ -856,17 +856,75 @@ to move the arguments into the correct registers.
 
 **Provided by**: `<ministd_memory.h>`
 
+`alloc` allocates a certain amounts of bytes,
+returning the allocated memory.
+
+`nalloc` allocates enough memory for n copies of size bytes.
+It is essentially equivalent to `alloc(size*n, err_out)`
+with some overflow protection.
+
+`realloc` takes a pointer to allocated memory,
+and resizes the allocated memory to fit the provided number of bytes.
+If passed `NULL` as the pointer,
+it acts as `alloc`.
+If told to resize to 0 bytes,
+it frees the memory.
+
+`nrealloc` functions similarly to `nalloc`,
+but reallocating memory rather than doing the initial allocation.
+
+`free` takes a pointer to allocated memory and releases the memory again.
+
 #### Copying and setting – `memzero`, `nmemzero`, `memmove`, `nmemmove`
 
 **Provided by**: `<ministd_memory.h>`
+
+`memzero` takes a pointer to some memory and a size in bytes
+and zeroes out that memory.
+
+`nmemzero` does the same,
+taking the size of a single element and the number of elements.
+
+`memmove` takes a pointer to a destination and a source,
+as well as the number of bytes to copy over.
+It then copies the memory from the source into the destination.
+
+**NOTE**: `memmove` expects the memory regions to be non-overlapping!
+
+`nmemmove` does the same as `memmove`,
+taking the size of a single element and the number of elements.
 
 #### Allocator interface – `Allocator` and `Allocator_alloc_t`, `Allocator_realloc_t`, `Allocator_free_t`
 
 **Provided by**: `<ministd_memory.h>`
 
+`Allocator` is, just like file,
+a collection of pointers to an allocator's functions,
+allowing the implementation of custom allocators.
+
+It needs three functions:
+
+`Allocator_alloc_t` which allocates a certain amount of bytes of memory.
+When told to allocate zero bytes,
+it should return the `NULL` pointer.
+
+`Allocator_realloc_t` grows or shrinks the allocated memory
+to the provided new size.
+When passed a `NULL` pointer,
+it should just allocate new memory.
+When told to reallocate to zero bytes,
+it should free the memory.
+
+`Allocator_free_t` releases the allocated memory again.
+
 #### Allocator convenience functions – `a_alloc`, `a_nalloc`, `a_realloc`, `a_nrealloc`, `a_free`
 
 **Provided by**: `<ministd_memory.h>`
+
+`a_alloc`, `a_realloc`, and `a_free` are equivalent to `alloc->alloc(alloc, bytes, err_out)`, `alloc->realloc(alloc, buf, bytes, err_out)`, and `alloc->free(alloc, buf)`.
+
+`a_nalloc` and `a_nrealloc` are equivalent to `a_alloc(alloc, size*n, err_out)` and `a_realloc(alloc, buf, size*n, err_out)`,
+but with some overflow protection added.
 
 ## Data
 
