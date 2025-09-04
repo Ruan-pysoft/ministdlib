@@ -724,10 +724,9 @@ without introducing a ton of boilerplate and possible overhead,
 so in the end I decided against this.
 
 In the end I emulated go's method which, as far as I'm aware,
-consists of returning both the functions value and an error object,
+consists of returning both the function's value and an error object,
 with a `nil` object indicating no error,
 and error handling is done with a simple `if err != nil`.
-
 They then make you explicitly discard the error
 if you do not want to handle it.
 
@@ -760,7 +759,7 @@ type val = someFunc(&err);
 if (err != ERR_OK) {
 	...
 }
-/* and similarly ignoring an error in c: */
+/* and similarly, ignoring an error in c: */
 type val = errorIgnored(NULL);
 ...
 ```
@@ -853,9 +852,61 @@ to move the arguments into the correct registers.
 
 ### Memory management
 
+#### Allocating and freeing – `alloc`, `nalloc`, `realloc`, `nrealloc`, `free`
+
+**Provided by**: `<ministd_memory.h>`
+
+#### Copying and setting – `memzero`, `nmemzero`, `memmove`, `nmemmove`
+
+**Provided by**: `<ministd_memory.h>`
+
+#### Allocator interface – `Allocator` and `Allocator_alloc_t`, `Allocator_realloc_t`, `Allocator_free_t`
+
+**Provided by**: `<ministd_memory.h>`
+
+#### Allocator convenience functions – `a_alloc`, `a_nalloc`, `a_realloc`, `a_nrealloc`, `a_free`
+
+**Provided by**: `<ministd_memory.h>`
+
 ## Data
 
 ### Strings support
+
+#### Cstring operations – `strlen`, `strnlen`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String and StringView types – `String`, `StringView`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String macros – `s_to_c`, `s_len`, `s_clone`, `s_as_sv`, `sv_to_c`, `sv_len`, `sv_clone`
+
+**Provided by**: `<ministd_string.h>`
+
+#### Creating and destroying strings – `s_new`, `s_free`, `s_newalloc`, `sv_new`, `s_frombuf`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String management – `s_grow`, `s_terminate`, `s_reset`, `s_restart`, `s_copy`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String writing – `s_putc`, `s_append`, `s_nappend`, `s_memappend`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String modification – `s_tolower`, `s_toupper`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String parsing – `s_parse`
+
+**Provided by**: `<ministd_string.h>`
+
+#### String files – `StringFile` and `sf_open`
+
+**Provided by**: `<ministd_string.h>`
 
 ## IO
 
@@ -911,6 +962,9 @@ Here follows an example of how to create your own `FILE`,
 for more examples see `src/ministd_io.h`
 for the implementations of `BufferedFile` and `LockedFile`,
 or `src/ministd_string.h` for the implementation of `StringFile`.
+
+When run the program should exit basically immediately,
+producing no output.
 
 ```c
 #include <ministd_io.h>
@@ -981,7 +1035,7 @@ static void
 mf_close(struct MemoryFile ref this, err_t ref err_out)
 {
 	/* nothing to do,
-	 * if this->memory was owned, we'd free it here
+	 * if this->memory was owned we'd free it here
 	 */
 
 	(void) this;
