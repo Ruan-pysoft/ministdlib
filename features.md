@@ -707,6 +707,21 @@ main(void)
 but I will likely hide it as an implementation detail in the future
 (perhaps by moving it to `<_ministd_syscall.h>`)
 
+`<ministd_syscall.h>` imports the definitions of the Linux syscall numbers from `<asm/unistd.h>`,
+and defines seven syscall macros,
+from `_syscall0` to `_syscall6`,
+where the number indicates the number of arguments the syscall takes.
+
+To use the macros,
+provide the syscall number as the first argument,
+the output variable as the second argument,
+and the syscall's arguments after those two.
+
+For the most part, the macros are thin wrappers over `__asm__ volatile` calls
+which calls the syscall instruction,
+as well as some supporting code
+to move the arguments into the correct registers.
+
 ### Memory management
 
 ## Data
