@@ -59,12 +59,12 @@ fprintl(long l, FILE ref file, err_t ref err_out)
 		/* l == -2^63 */
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintul((unsigned long)l, file, err_out);
+		return fprintul((unsigned long)l, file, err_out)+1;
 	}
 	if (l < 0) {
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintl(-l, file, err_out);
+		return fprintl(-l, file, err_out)+1;
 	}
 
 	buf[20] = 0;
@@ -111,12 +111,12 @@ fprintlb(long l, FILE ref file, err_t ref err_out)
 		/* l == -2^63 */
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintulb((unsigned long)l, file, err_out);
+		return fprintulb((unsigned long)l, file, err_out)+1;
 	}
 	if (l < 0) {
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintlb(-l, file, err_out);
+		return fprintlb(-l, file, err_out)+1;
 	}
 
 	buf[63] = 0;
@@ -163,12 +163,12 @@ fprintlx(long l, FILE ref file, err_t ref err_out)
 		/* l == -2^63 */
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintulx((unsigned long)l, file, err_out);
+		return fprintulx((unsigned long)l, file, err_out)+1;
 	}
 	if (l < 0) {
 		fprintc('-', file, &err);
 		TRY_WITH(err, 0);
-		return fprintlx(-l, file, err_out);
+		return fprintlx(-l, file, err_out)+1;
 	}
 
 	buf[16] = 0;

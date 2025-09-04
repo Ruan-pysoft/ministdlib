@@ -21,7 +21,7 @@ extern FILE ref stderr;
 	X(c, char) \
 	X(p, const ptr)
 #define LIST_OF_FMTTYPES_SPECIAL_SCAN \
-	X(s, char ref) \
+	X(s, char own) \
 	X(c, char)
 
 /* basic fprint* and print* function declarations */
