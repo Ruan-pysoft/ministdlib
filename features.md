@@ -1429,21 +1429,71 @@ The other `fscan*` functions just reads an integer value from the input file.
 
 ### Formatted terminal output
 
+Formatted terminal output in `<ministd_term.h>` is implemented
+using ANSI escape codes.
+
 #### Cursor movement – `term_csi_cursor_*`, `term_csi_goto_col`, `term_csi_goto`
 
 **Provided by**: `<ministd_term.h>`
+
+There are eight provided functions for moving the cursor.
+
+`term_csi_cursor_up`, `term_csi_cursor_down`, `term_csi_cursor_forward`, and `term_csi_cursor_back`
+moves the cursor n cells up, down, forwards, or backwards.
+
+`term_csi_cursor_nextline` and `term_csi_cursor_prevline`
+moves the cursor to the beginning of the next or previous line.
+
+`term_csi_goto_col` moves the cursor to the given column.
+
+`term_csi_goto` moves the cursor to column x, row y.
 
 #### Clearing – `term_csi_clearscreen*`, `term_csi_clear_line*`
 
 **Provided by**: `<ministd_term.h>`
 
+`term_csi_clearscreen_to_end` clears the screen
+from where the cursor is to the end of the screen.
+
+`term_csi_clearscreen_to_start` clears the screen
+from where the cursor is to the start of the screen.
+
+`term_csi_clearscreen` clears the entire screen.
+
+`term_csi_clearscreen_full` clears the entire screen
+and deletes the scrollback buffer.
+
+`term_csi_clear_line_to_end` clears the current line,
+from the position of the cursor to the end of the line.
+
+`term_csi_clear_line_to_start` clears the current line,
+from the position of the cursor to the start of the line.
+
+`term_csi_clear_line` clears the whole current line.
+
 #### Scrolling – `term_csi_scroll*`
 
 **Provided by**: `<ministd_term.h>`
 
-#### Graphics – `struct TERM_GRAPHICS` and `term_set_graphics`
+`term_csi_scroll_up` scrolls the terminal buffer up by n lines.
+
+`term_csi_scroll_down` scrolls the terminal buffer down by n lines.
+
+#### Graphics – `enum TERM_GRAPHICS` and `term_set_graphics`
 
 **Provided by**: `<ministd_term.h>`
+
+The `TERM_GRAPHICS` enumeration contains the numbers
+for the "Select Graphic Rendition" ANSI code.
+
+It contains values for resetting graphics,
+changing decoration (bold, italic, blinking, etc),
+changing fonts, and setting background and foreground colours.
+
+They are then used with the `term_set_graphics` function
+to change the graphics mode of the terminal output.
+
+TODO create an example of coloured & decorated text
 
 ### Polling
 
