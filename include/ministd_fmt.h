@@ -7,15 +7,19 @@ extern FILE ref stdin;
 extern FILE ref stdout;
 extern FILE ref stderr;
 
-#define LIST_OF_FMTTYPES_NUMERIC \
+#define LIST_OF_FMTTYPES_NUMERIC_SIGNED \
 	X(h, short) \
-	X(uh, unsigned short) \
 	X(i, int) \
-	X(ui, unsigned int) \
 	X(l, long) \
+	X(z, isz)
+#define LIST_OF_FMTTYPES_NUMERIC_UNSIGNED \
+	X(uh, unsigned short) \
+	X(ui, unsigned int) \
 	X(ul, unsigned long) \
-	X(z, isz) \
 	X(uz, usz)
+#define LIST_OF_FMTTYPES_NUMERIC \
+	LIST_OF_FMTTYPES_NUMERIC_SIGNED \
+	LIST_OF_FMTTYPES_NUMERIC_UNSIGNED
 #define LIST_OF_FMTTYPES_SPECIAL_PRINT \
 	X(s, const char ref) \
 	X(c, char) \

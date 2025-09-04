@@ -282,7 +282,7 @@ fscans(FILE ref file, err_t ref err_out)
 		char c;                                              \
 		type res = 0;                                        \
                                                                      \
-		while ((c = peekc(file, &err) != -1) && c <= ' ') {  \
+		while ((c = peekc(file, &err)) != -1 && c <= ' ') {  \
 			TRY_WITH(err, 0);                            \
 			fgetc(file, &err);                           \
 			TRY_WITH(err, 0);                            \
@@ -310,5 +310,51 @@ fscans(FILE ref file, err_t ref err_out)
                                                                      \
 		return res;                                          \
 	}
-LIST_OF_FMTTYPES_NUMERIC
+LIST_OF_FMTTYPES_NUMERIC_UNSIGNED
+#undef X
+#define X(suff, type)                                                \
+	type                                                         \
+	fscan ## suff(FILE ref file, err_t ref err_out)              \
+	{                                                            \
+		err_t err = ERR_OK;                                  \
+		char c;                                              \
+		type res = 0;                                        \
+		bool neg = false;                                    \
+                                                                     \
+		while ((c = peekc(file, &err)) != -1 && c <= ' ') {  \
+			TRY_WITH(err, 0);                            \
+			fgetc(file, &err);                           \
+			TRY_WITH(err, 0);                            \
+		}                                                    \
+		TRY_WITH(err, 0);                                    \
+		if (c == -1) ERR_WITH(ERR_EOF, 0);                   \
+                                                                     \
+		if (c == '-') {                                      \
+			neg = true;                                  \
+			fgetc(file, &err);                           \
+			c = peekc(file, &err);                       \
+		}                                                    \
+		if (c < '0' || c > '9') ERR_WITH(ERR_PARSE, 0);      \
+		while ((c = fgetc(file, &err)) >= '0' && c <= '9') { \
+			const type oldres = res;                     \
+			TRY_WITH(err, 0);                            \
+                                                                     \
+			res *= 10;                                   \
+			res += (c - '0') * -(neg*2 - 1);             \
+                                                                     \
+			if (!neg && res < oldres) {                  \
+				ERR_WITH(ERR_OVERFLOW, 0);           \
+			} else if (neg && res > oldres) {            \
+				ERR_WITH(ERR_OVERFLOW, 0);           \
+			}                                            \
+		}                                                    \
+		TRY_WITH(err, 0);                                    \
+		if (c != -1) {                                       \
+			ungetc(file, c, &err);                       \
+			TRY_WITH(err, 0);                            \
+		}                                                    \
+                                                                     \
+		return res;                                          \
+	}
+LIST_OF_FMTTYPES_NUMERIC_SIGNED
 #undef X
