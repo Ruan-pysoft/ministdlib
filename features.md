@@ -1501,21 +1501,120 @@ TODO create an example of coloured & decorated text
 
 **Provided by**: `<ministd_poll.h>`
 
+The `pollfd` struct is used for monitoring files for events
+(for example, data being available to be read)
+using the `poll` function.
+
+The `poll_flag` enumeration lists the different events
+which can be listened for,
+passed to functions like `pollfd_new` or `pollfd_has_events`.
+You can get documentation for the different flags
+by viewing the `poll(3p)` manpage on Linux.
+
+In order to create a `pollfd` from a file descriptor,
+you must use the `pollfd_new` function,
+also passing all the events you want to listen for,
+bitwise or'd together.
+
+To create a `pollfd` from a `FILE` object,
+you must use the `pollfd_new_from_file` function,
+once again passing the desired event flags or'd together.
+
 #### Using pollfds – `pollfd_has_events`, `poll`
 
 **Provided by**: `<ministd_poll.h>`
 
-#### Poll list type – `poll_list_t` and `poll_list_new`, `poll_list_free`
+You can check if a `pollfd` has pending events of a certain type
+by using the `pollfd_has_events` function
+along with the events you wish to test all or'd together.
+If you want to test for *any* event,
+pass `~0` as the events argument.
+
+`poll` is a wrapper around Linux's `poll` syscall,
+and takes an array of `pollfd`s
+along with the length of said array and a timeout.
+The kernel will then set and reset the pending events
+for each provided `pollfd` as appropriate.
+If there are no new events at the time it is called
+then `poll`'s behaviour changes depending on the timeout provided:
+ - when the timeout is `0`, `poll` returns immediately
+ - when the timeout is `-1`, `poll` will block until a requested event occurs
+   or until the program receives an interrupt
+ - otherwise, `poll` will timeout in the number of milliseconds specified
+
+`poll` returns the number of files with events.
+
+#### Poll list type – `poll_list_t` and `poll_list_new`, `poll_list_free`, `poll_list_poll`
 
 **Provided by**: `<ministd_poll.h>`
 
-#### Using poll lists – `poll_list_add*`, `poll_list_remove`, `poll_list_poll`
+`poll_list_t` is a type for managing lists of `pollfd`s.
+
+A poll list can be created with `poll_list_new`,
+and resources are cleaned up with `poll_list_free` once you're done with it.
+
+#### Modifying poll lists – `poll_list_add*`, `poll_list_remove`
 
 **Provided by**: `<ministd_poll.h>`
 
-#### Iterating poll lists – `poll_list_first`, `poll_list_next`
+There are three methods for adding a new `pollfd` to a poll list:
+ - `poll_list_add` is used to add an existing `pollfd` struct
+ - `poll_list_add_fd` is used to add a `pollfd` created from a file descriptor
+ - `poll_list_add_file` is used to add a `pollfd` created from a `FILE`
+
+The function `poll_list_remove` is used
+to remove the `pollfd` at the given index.
+
+#### Using poll lists – `poll_list_first`, `poll_list_next`
 
 **Provided by**: `<ministd_poll.h>`
+
+Use `poll_list_poll` to run `poll` on the underlying array.
+
+After calling `poll_list_poll`,
+you can then iterate over the files with waiting events
+using `poll_list_first` and `poll_list_next`.
+
+`poll_list_first` returns the first `pollfd` with an event,
+or `NULL` if there is no such `pollfd`.
+
+`poll_list_next` returns the next `pollfd` with an event,
+or `NULL` if it was passed the last such `pollfd`.
+
+#### Example
+
+TODO expand this example
+
+Also, this example demonstrates that this API isn't properly developed yet...
+
+```
+#include <ministd_fmt.h>
+#include <ministd_poll.h>
+
+int
+main(void)
+{
+	poll_list_t poll_list = poll_list_new(NULL);
+
+	poll_list_add_file(&poll_list, stdin, PF_IN, NULL);
+	/* add more files ... */
+
+	for (;;) {
+		struct pollfd ref curr;
+
+		poll_list_poll(&poll_list, -1, NULL);
+
+		for (curr = poll_list_first(&poll_list); curr != NULL;
+		     curr = poll_list_next(&poll_list, curr, NULL)) {
+			int fd = curr->fd;
+			prints("Got some input!\n", NULL);
+			/* get input or something */
+		}
+	}
+
+	return 0;
+}
+```
 
 ## Concurrency
 
