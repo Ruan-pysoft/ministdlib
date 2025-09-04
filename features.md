@@ -723,7 +723,7 @@ however I could not work out how to practically do this
 without introducing a ton of boilerplate and possible overhead,
 so in the end I decided against this.
 
-Lastly, I git upon go's method which, as far as I'm aware,
+In the end I emulated go's method which, as far as I'm aware,
 consists of returning both the functions value and an error object,
 with a `nil` object indicating no error,
 and error handling is done with a simple `if err != nil`.
