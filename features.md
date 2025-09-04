@@ -3,12 +3,20 @@
 Here I will document the features of ministdlib,
 along with their test coverage.
 
-I will also document some of the process/decisions behind their implementation.
+I will also document some of the processes/decisions behind their implementation.
 
 Note that I do not provide the full type signature of each function;
 to find that navigate to the header I indicated the function can be found in
 (located in the `include/` directory)
 and search for the name of the function.
+
+Keep in mind that this is also an exercise in design and creativity for myself,
+so much of the API differs greatly from standard libc,
+even though many other parts take great inspiration from
+(or outright copies) it.
+As such, I recommend reading the documentation on functions you wish to use
+in order to make sure you understand what they actually do,
+rather than assuming they work the same as a similarly-named libc one.
 
 ## Prelude
 
@@ -38,7 +46,33 @@ thereby having the same initial bytes as a `FILE` struct)
 
 TODO shouldn't the `FILE` typedef be moved to `<ministd_types.h>`?
 
+## Design guidelines
+
+All functions that may fail should take `err_t ref err_out` as an argument
+(with that type signature *and* argument name).
+It is recommended that this should always be the *last* argument
+for a consistent API.
+The function should handle `err_out` being `NULL`
+when the caller has no interest in handling errors.
+
+Use `own` or `ref` rather than `*` when declaring pointer types.
+This is to facilitate ownership-tracking to make memory management clearer.
+For more information on the precise usage of `own` and `ref`,
+see the "`own` and `ref` pointers" section.
+Note that the correct usage of `own` and `ref`
+is currently merely a matter of convention,
+and is not enforced or checked automatically in any way.
+
+The `main` function should have the signature `int main(void)`
+as expected by `_start`.
+Note also that because programs are compiled with `-ffreestanding`
+the compiler does not recognise the `main` function as a `main` function,
+so there is no implicit `return 0`.
+
 ## Headers
+
+Here is a quick summary of all the user-facing headers supplied;
+more complete descriptions of each header follows.
 
 <table>
 <thead>
@@ -98,6 +132,10 @@ Defines the error propagation/reporting interface of the library.
 _SEMI-INTERNAL_
 
 **Purpose**: provide wrappers for calling syscalls
+
+**NOTE**: meant for internal use,
+will likely hide later and implementation details might change without warning
+(but that might happen anyways bc this whole project is just me playing around)
 
 Defines macros `_syscall0` through `_syscall6`,
 as well as including `<asm/unistd.h>`
@@ -222,16 +260,16 @@ _STABLE_
 
 **Purpose**: provide atomic types/operations
 
-Provides ten different atomics,
+Provides ten different atomics;
 five different integer sizes, both signed and unsigned.
 
 It also provides functions for working with atomics,
 along with the `memory_fence` function.
 
-Protip: If you want to be naughty,
+Pro tip: If you want to be naughty,
 you can use the fact that each atomic type
 is just a thin wrapper over the corresponding integer type,
-and that this design is unlikely to change in the future
+and that this design is unlikely to change in the future,
 to do some pointer typecasting and interact directly with the raw bytes.
 
 #### `<ministd_sched.h>`
@@ -365,8 +403,10 @@ main(void)
 
 _Part of the prelude_
 
-Two program termination functions are provided:
-`exit` and `thread_exit`.
+Three program termination functions are provided:
+`exit`, `thread_exit`, and `panic`.
+
+`panic` is documented in the next section.
 
 `exit` runs all the exit hooks,
 before terminating the current thread group with the `exit_group` Linux syscall.
@@ -392,6 +432,13 @@ equivalent to `exit` except that no exit hooks are run.
 
 This is used when resources required by the exit hooks might not be available.
 
+`PANIC` is a macro,
+which simply runs `panic`
+and places the `__builtin_unreachable` compiler builtin right after,
+which should allow for some compiler optimisations.
+
+It is recommended that you use `PANIC` rather than `panic`.
+
 ##### Example
 
 The following program should print only `baai!`,
@@ -413,7 +460,7 @@ main(void)
 
 	prints("baai!\n", NULL);
 
-	panic(0);
+	PANIC(0);
 
 	return 0;
 }
@@ -491,7 +538,7 @@ When working with conditionals,
 it is recommended to use `bool` rather than int,
 just as documentation/to provide clarity.
 Booleans should also only be assigned the values `true` or `false`,
-rather than an arbritrary integer value,
+rather than an arbitrary integer value,
 though this is in no way enforced.
 
 There are three values defined:
@@ -636,6 +683,88 @@ and then the `err_str` of the error to stderr.
 So `perror(ERR_OVERFLOW, "doing some math")`
 would display `doing some math: operation would result in overflow`.
 
+#### Reasoning behind design
+
+The error design for the library is meant to be
+somewhat reminiscent of golang's error handling,
+though I have never programmed in go myself,
+so it could be way off.
+
+I have considered various different error handling methods
+before settling on the current model.
+
+First, I dislike libc's method of handling errors,
+where some special value is returned from a function
+which indicates an error,
+and then more information is stored in a global `errno` variable.
+
+One problem with this method is
+that it is very easy to ignore errors implicitly;
+how many times have you actually checked the return value of `printf`
+so that you may handle an IO error?
+And when you don't,
+how aware are you of the fact that the call to `printf` might fail?
+
+The second big problem is that it is hard to make this thread safe,
+unless you make `errno` an atomic value from the start or something,
+and even then you now have the problem
+that if multiple functions have an error,
+only the error code of one of them will be captured.
+
+Another method which I didn't really consider
+is using setjmp/longjmp to essentially create an exceptions mechanism.
+The long and the short is that I don't really know how to use setjmp/longjmp
+(and I didn't want to spend time learning how to use it at the time)
+and I really dislike the exception model of error handling anyways.
+
+An error handling mechanism I found quite attractive
+is Rust's result types,
+however I could not work out how to practically do this
+without introducing a ton of boilerplate and possible overhead,
+so in the end I decided against this.
+
+Lastly, I git upon go's method which, as far as I'm aware,
+consists of returning both the functions value and an error object,
+with a `nil` object indicating no error,
+and error handling is done with a simple `if err != nil`.
+
+They then make you explicitly discard the error
+if you do not want to handle it.
+
+C, however, provides no easy method for having multiple return values,
+nor does it have a mechanism
+that prevents you from implicitly ignoring a return value.
+So, to imitate go's method,
+I decided to instead take a pointer to the error object
+as the last argument of a function,
+allowing the error to be explicitly ignored by passing the `NULL` pointer.
+
+This leads to a very similar error handling method,
+though I did provide some macros to work around the boilerplate
+of checking if the error argument is `NULL`:
+
+```go
+// how error handling is done in Go
+val, err := someFunc()
+if err != nil {
+	...
+}
+// and discarding an error:
+val, _ := errorIgnored()
+...
+```
+
+```c
+/* similar interface in c */
+type val = someFunc(&err);
+if (err != ERR_OK) {
+	...
+}
+/* and similarly ignoring an error in c: */
+type val = errorIgnored(NULL);
+...
+```
+
 #### Example
 
 ```c
@@ -778,11 +907,188 @@ There are currently three different file operations:
  - `FO_GETFD` returns the file's file descriptor if it exists,
    otherwise it errors with `ERR_BADF`
 
+Here follows an example of how to create your own `FILE`,
+for more examples see `src/ministd_io.h`
+for the implementations of `BufferedFile` and `LockedFile`,
+or `src/ministd_string.h` for the implementation of `StringFile`.
+
+```c
+#include <ministd_io.h>
+#include <ministd_fmt.h>
+#include <ministd_memory.h>
+
+struct MemoryFile {
+	FILE ptrs;
+	ptr memory;
+	usz size;
+	usz read_pos;
+	usz write_pos;
+};
+
+static usz mf_read(struct MemoryFile ref this, ptr buf, usz cap,
+		   err_t ref err_out);
+static usz mf_write(struct MemoryFile ref this, const ptr buf, usz cap,
+		    err_t ref err_out);
+static void mf_close(struct MemoryFile ref this, err_t ref err_out);
+static usz mf_run(struct MemoryFile ref this, enum FILE_OP op,
+		  err_t ref err_out);
+static FILE mf_pointers = {
+	(FILE_read_t)mf_read,
+	(FILE_write_t)mf_write,
+	(FILE_close_t)mf_close,
+	(FILE_run_t)mf_run,
+	0, false,
+};
+
+static usz
+mf_read(struct MemoryFile ref this, ptr buf, usz cap, err_t ref err_out)
+{
+	usz read_bytes = cap;
+
+	/* errors not possible */
+	(void) err_out;
+
+	if (read_bytes > this->size - this->read_pos) {
+		read_bytes = this->size - this->read_pos;
+	}
+
+	memmove(buf, (char ref)this->memory + this->read_pos, read_bytes);
+
+	this->read_pos += read_bytes;
+
+	return read_bytes;
+}
+static usz
+mf_write(struct MemoryFile ref this, const ptr buf, usz cap, err_t ref err_out)
+{
+	usz write_bytes = cap;
+
+	if (write_bytes > this->size - this->write_pos) {
+		write_bytes = this->size - this->write_pos;
+	}
+
+	if (write_bytes == 0) {
+		ERR_WITH(ERR_IO, 0);
+	}
+
+	memmove((char ref)this->memory + this->write_pos, buf, write_bytes);
+
+	this->write_pos += write_bytes;
+
+	return write_bytes;
+}
+static void
+mf_close(struct MemoryFile ref this, err_t ref err_out)
+{
+	/* nothing to do,
+	 * if this->memory was owned, we'd free it here
+	 */
+
+	(void) this;
+	(void) err_out;
+}
+static usz
+mf_run(struct MemoryFile ref this, enum FILE_OP op, err_t ref err_out)
+{
+	usz r = 0;
+
+	(void) this;
+
+	switch (op) {
+		case FO_FLUSH: break; /* no-op */
+		case FO_HASFD: {
+			r = false; /* does not have file descriptor */
+		break; }
+		case FO_GETFD: {
+			ERR_WITH(ERR_BADF, 0); /* no file descriptor to get */
+		break; }
+	}
+
+	return r;
+}
+
+struct MemoryFile own mf_new(ptr buf, usz bufcap, usz write_at,
+			     err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	struct MemoryFile own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->ptrs = mf_pointers;
+	res->memory = buf;
+	res->size = bufcap;
+	res->read_pos = 0;
+	res->write_pos = write_at;
+
+	return res;
+}
+
+int
+main(void)
+{
+	err_t err = ERR_OK;
+	FILE own file;
+	char buffer[1024] = "123";
+
+	file = (FILE own)mf_new(buffer, 1024, 3, &err);
+	if (err != ERR_OK) {
+		free(buffer);
+
+		perror(err, "while creating file");
+		return 1;
+	}
+
+	fprintc(' ', file, &err);
+	fprinti(-42, file, &err);
+	if (err != ERR_OK) {
+		close(file, NULL);
+		free(file);
+		free(buffer);
+
+		perror(err, "while writing to file");
+		return 1;
+	}
+
+	/* buffer should now contain "123 -42" */
+
+	if (fscani(file, &err) != 123) {
+		close(file, NULL);
+		free(file);
+		free(buffer);
+
+		fprints("didn't read correct value from file!\n", stderr, NULL);
+		if (err != ERR_OK) perror(err, "while reading from file");
+		return 1;
+	}
+	if (fscani(file, &err) != -42) {
+		close(file, NULL);
+		free(file);
+		free(buffer);
+
+		fprints("didn't read correct value from file!\n", stderr, NULL);
+		if (err != ERR_OK) perror(err, "while reading from file");
+		return 1;
+	}
+
+	close(file, &err);
+	free(file);
+	free(buffer);
+	if (err != ERR_OK) {
+		perror(err, "while closing file");
+		return 1;
+	}
+
+	return 0;
+}
+```
+
 #### Low-level IO – `read`, `write`
 
 **Provided by**: `<ministd_io.h>`
 
-`read` and `write` both takes a file, a buffer, the size of the buffer, and `err_out`.
+`read` and `write` both take a file, a buffer, the size of the buffer, and `err_out`.
 They are thin wrappers over
 `file->read(file, buf, cap, err_out)` and `file->write(file, buf, cap, err_out)`.
 
@@ -809,7 +1115,7 @@ and the file should not be used again after calling `close` on it.
 There are currently three different file operations:
 
  - `FO_FLUSH` flushes a buffered file, does nothing otherwise
- - `FO_HASFD` returns `1` if the file has a file descriptor, `0` otherwise
+ - `FO_HASFD` returns `true` if the file has a file descriptor, `false` otherwise
  - `FO_GETFD` returns the file's file descriptor if it exists,
    otherwise it errors with `ERR_BADF`
 
@@ -1065,7 +1371,7 @@ The other `fscan*` functions just reads an integer value from the input file.
 
 **Provided by**: `<ministd_atomic.h>`
 
-#### Arythmetic and bit operations – `atomic_add_*`, `atomic_sub_*`, `atomic_or_*`, `atomic_xor_*`, `atomic_and_*`
+#### Arithmetic and bit operations – `atomic_add_*`, `atomic_sub_*`, `atomic_or_*`, `atomic_xor_*`, `atomic_and_*`
 
 **Provided by**: `<ministd_atomic.h>`
 
