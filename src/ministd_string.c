@@ -190,6 +190,57 @@ isz
 s_print(const String ref this, err_t ref err_out)
 { return s_fprint(this, stdout, err_out); }
 
+String own
+s_fscan(FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	String own res;
+
+	res = s_new(&err);
+	TRY_WITH(err, NULL);
+
+	s_fscan_into(res, file, err_out);
+	return res;
+}
+void
+s_fscan_into(String ref this, FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+
+	if (this->len == this->cap) {
+		s_grow(this, this->cap, &err);
+		TRY_VOID(err);
+	}
+
+	if (fgets(&this->buf[this->len], this->cap - this->len, file, &err)) {
+		this->len += strnlen(
+			&this->buf[this->len], this->cap - this->len
+		);
+		return;
+	}
+
+	for (;;) {
+		const usz oldcap = this->cap;
+
+		TRY_VOID(err);
+		this->len = this->cap;
+
+		s_grow(this, this->cap, &err);
+		TRY_VOID(err);
+
+		if (fgets(&this->buf[oldcap], oldcap, file, &err)) {
+			this->len += strnlen(&this->buf[oldcap], oldcap);
+			return;
+		}
+	}
+}
+String own
+s_scan(err_t ref err_out)
+{ return s_fscan(stdin, err_out); }
+void
+s_scan_into(String ref this, err_t ref err_out)
+{ s_fscan_into(this, stdin, err_out); }
+
 struct StringFile {
 	FILE ptrs;
 	String ref str;

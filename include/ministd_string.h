@@ -29,6 +29,11 @@ void s_sappend(String ref this, const String ref other, err_t ref err_out);
 isz s_fprint(const String ref this, FILE ref file, err_t ref err_out);
 isz s_print(const String ref this, err_t ref err_out);
 
+String own s_fscan(FILE ref file, err_t ref err_out);
+void s_fscan_into(String ref this, FILE ref file, err_t ref err_out);
+String own s_scan(err_t ref err_out);
+void s_scan_into(String ref this, err_t ref err_out);
+
 typedef struct StringFile StringFile;
 typedef struct StringReadFile StringReadFile;
 

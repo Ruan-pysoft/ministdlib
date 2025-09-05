@@ -1,5 +1,6 @@
-#include <ministd.h>
+#include <ministd_fmt.h>
 #include <ministd_io.h>
+#include <ministd_memory.h>
 #include <ministd_string.h>
 
 int
@@ -7,16 +8,23 @@ main(void)
 {
 	String own greeting;
 	String own recipient;
+	String own temp;
+	FILE own file;
 
-	greeting = s_copy("Hello,", NULL);
-	recipient = s_newalloc(1024, NULL);
+	greeting = s_from_cstring("Hello, ", NULL);
+	recipient = s_with_capacity(1024, NULL);
 
-	recipient = s_append(recipient, "World!", NULL);
-	recipient = (String own)s_restart(s_as_sv(recipient));
+	s_append(recipient, "World!", 6, NULL);
 
-	greeting = s_parse(s_as_sv(recipient), greeting, NULL);
+	file = (FILE ref)sf_open_readonly(recipient, NULL);
+	temp = s_fscan(file, NULL);
+	s_sappend(greeting, temp, NULL);
+	s_free(temp);
+	close(file, NULL);
+	free(file);
 
-	puts(s_to_c(greeting), NULL);
+	s_print(greeting, NULL);
+	printc('\n', NULL);
 
 	s_free(greeting);
 	s_free(recipient);
