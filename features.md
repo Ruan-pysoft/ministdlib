@@ -1758,9 +1758,70 @@ atomic_fetch_max_i(volatile struct AtomicI this, int val, enum memory_order orde
 
 **Provided by**: `<ministd_sched.h>`
 
+`clone` is used to create a new child process,
+which can be process-like (fewer shared resources)
+or thread-like (more shared resources).
+
+It takes a pointer to the function which will be the child's "main" function,
+exiting with the exit code retuned from it.
+It also takes a single argument to pass to the function,
+which is a void pointer,
+along with a `clone_args` struct to specify the properties of the child process.
+
+For documentation of the `clone_args` struct,
+see the `clone(2)` manpage on Linux.
+
+Note that if the `CLONE_VM` flag is set,
+then you should allocate a stack for the child
+and pass a pointer to the _lowest byte_ of the stack
+in the `clone_args` struct,
+along with the size of the stack.
+
 #### `_syscall_clone3`
 
 **Provided by**: `<ministd_sched.h>`
+
+The `_syscall_clone3` macro just exposes the `clone3` syscall,
+taking the return value and the `clone_args` struct as parameters.
+
+Do note that `_syscall_clone3` will not work
+unless you also include the `<ministd_syscall.h>` header.
+
+It is recommended that you **do not** use this macro directly,
+rather making use of the provided `clone` function.
+If you do want to use it,
+feel free to take a peek in `src/ministd_sched.c` for how to use it,
+otherwise it might take you a long while to get it working properly.
+
+For context,
+the easiest way I could get it to work when the `CLONE_VM` flag was set
+was to simply write the logic in assembly rather than C
+(because C kept touching the stack),
+giving inline assembly looking like this:
+
+```c
+/* see src/ministd_sched.c for the actual implementation,
+ * along with comments explaining what the assembly does
+ */
+__asm__ volatile(
+	"syscall\n"
+	"test %%rax, %%rax\n"
+	"jnz parent\n"
+	"mov %[stack_top], %%rsp\n"
+	"mov %[stack_top], %%rbp\n"
+	"mov %[arg], %%rdi\n"
+	"call *%[fn]\n"
+	"mov %%rax, %%rdi\n"
+	"call thread_exit\n"
+	"parent:\n"
+	: "=a" (res)
+	: [fn] "r" (fn), [arg] "d" (arg), "D" (cl_args),
+	  "S" (sizeof(*cl_args)),
+	  [stack_top] "r" (((cl_args->stack + cl_args->stack_size) & ~0xF) - 8),
+	  "a" ((usz)__NR_clone3)
+	: "rcx"
+);
+```
 
 ### Locks
 
