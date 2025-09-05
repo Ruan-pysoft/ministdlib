@@ -90,7 +90,7 @@ more complete descriptions of each header follows.
   <tr> <td><code>&lt;ministd_error.h&gt;</code></td> <td>stable</td> <td>define unified error interface</td> </tr>
   <tr> <td><code>&lt;ministd_syscall.h&gt;</code></td> <td>semi-internal</td> <td>provide wrappers for calling syscalls</td> </tr>
   <tr> <td><code>&lt;ministd_memory.h&gt;</code></td> <td>tentative</td> <td>provide memory allocation and management facilities</td> </tr>
-  <tr> <td><code>&lt;ministd_string.h&gt;</code></td> <td>redesign pending</td> <td>provide dynamic strings</td> </tr>
+  <tr> <td><code>&lt;ministd_string.h&gt;</code></td> <td>tentative</td> <td>provide dynamic strings</td> </tr>
   <tr> <td><code>&lt;ministd_io.h&gt;</code></td> <td>stable</td> <td>provide basic io interface</td> </tr>
   <tr> <td><code>&lt;ministd_fmt.h&gt;</code></td> <td>tentative</td> <td>provide formatted io interface</td> </tr>
   <tr> <td><code>&lt;ministd_term.h&gt;</code></td> <td>developing</td> <td>facilitate formatted terminal output</td> </tr>
@@ -180,19 +180,15 @@ so it is mostly a curiosity at the current point in time.
 
 #### `<ministd_string.h>`
 
-_REDESIGN PENDING_
+_TENTATIVE_
 
 **Purpose**: provide dynamic strings
 
 Provides some basic cstring functions
 as well as an automatically-managed growable string type.
 
-Currently it is vaguely based on plan9's `string.h`,
-but it was made with little planning or documentation
-and is currently something of a mess.
-
-At some point it will be redesigned,
-and I recommend avoiding its use until then.
+Also provides two string file types
+(one allowing for reading and writing, another just reading)
 
 ### IO
 
@@ -946,107 +942,80 @@ and `strnlen` returns the same up to a maximum length supplied.
 
 They can be used for finding the length of a cstring.
 
-#### String and StringView types – `String`, `StringView`
+#### String type, creation, and cleanup – `String` and `s_new`, `s_with_capacity`, `s_from_buffer`, `s_from_cstring`, `s_free`
 
 **Provided by**: `<ministd_string.h>`
 
-A `String` represents a string with a growable and modifiable buffer
-while a `StringView` represents a view into a string (immutable).
+A `String` represents a string with a growable and modifiable buffer.
 
-`String`s also contains a "write pointer"
-to keep track of where to append to the string,
-which starts right after the end of the string's data
-but can be moved around with various operations.
+A new `String` is created with one of four creation functions:
+ - `s_new` creates a new `String` with a default capacity
+   (currently 128 characters)
+ - `s_with_capacity` creates a new `String` with a specified capacity in bytes
+ - `s_from_buffer` creates a new `String` containing the data
+   from the given buffer
+ - `s_from_cstring` creates a new `String` containing the data
+   from the given cstring
 
-#### String macros – `s_to_c`, `s_len`, `s_clone`, `s_as_sv`, `sv_to_c`, `sv_len`, `sv_clone`
+Strings should be freed using `s_free` which also frees its internal buffer,
+rather than using the default `free` function.
 
-**Provided by**: `<ministd_string.h>`
-
-There are various macros for interacting with strings:
-
- - `s_to_c` extracts a cstring from a `String`
- - `s_len` gets the length of a `String`
- - `s_clone` copies a `String` (creates a new `String` with the same data)
- - `s_as_sv` converts a `String` to a `StringView`
- - `sv_to_c` extracts a cstring from a `StringView`
- - `sv_len` gets the length of a `StringView`
- - `sv_clone` creates a new `String` with the same data as the given `StringView`
-
-#### Creating and destroying strings – `s_new`, `s_free`, `s_newalloc`, `sv_new`, `s_frombuf`
+#### Converting to cstrings – `s_cstr`
 
 **Provided by**: `<ministd_string.h>`
 
-A new string is created with `s_new`,
-and a string (along with its resources) is freed with `s_free`.
+The `s_cstr` function is used to create a cstring from a `String`.
+Note that if the `String` contains a null byte,
+then the cstring will end early as it is terminated by a null byte.
 
-`s_newalloc` creates a new string with a certain capacity.
-
-`sv_new` creates a `StringView` from a given cstring.
-
-`s_frombuf` creates a `String`
-which uses an externally-allocated (and managed) buffer.
-
-#### String management – `s_grow`, `s_terminate`, `s_reset`, `s_restart`, `s_copy`
+#### Managing size – `s_len`, `s_capacity`, `s_reserve`, `s_grow`
 
 **Provided by**: `<ministd_string.h>`
 
-`s_grow` grows the `String`'s internal buffer by the specified amount.
+The length and capacity of a `String` can be found with
+`s_len` and `s_capacity`, respectively.
 
-`s_terminate` writes a null byte to the `String`'s write pointer.
+A `String`'s capacity can be changed using the `s_reserve` function,
+which will also adjust the length if the capacity is shrunk
+to be less than the length.
 
-`s_reset` resets the `String`'s write pointer back to the start
-and then terminates the string.
+The `s_grow` function is used to strictly grow the capacity of a `String`
+rather than setting the new capacity arbitrarily.
 
-`s_restart` resets the `String`'s write pointer back to the start
-but does not then terminate the string.
-
-`s_copy` creates a `String` containing the data of a given cstring.
-
-#### String writing – `s_putc`, `s_append`, `s_nappend`, `s_memappend`
+#### String building – `s_clear`, `s_push`, `s_append`, `s_sappend`
 
 **Provided by**: `<ministd_string.h>`
 
-`s_putc` appends a given character to the end of a `String`.
+`s_clear` is used to empty a `String`.
 
-`s_append` appends a given cstring to the end of a `String`,
-but doesn't move the write pointer forward.
+`s_push` appends a character to the end of a `String`.
 
-`s_nappend` appends a given character array of a given size
-to the end of a `String`,
-but doesn't move the write pointer forward.
+`s_append` and `s_sappend` appends data to the end of a `String`,
+data from a character buffer in the case of `s_append`
+or from another `String` in the case of `s_sappend`.
 
-`s_memappend` appends a given buffer of characters of a given sight
-to the end of a `String`,
-and moves the write pointer forward.
-
-(I am very confused about the need for both `s_nappend` and `s_memappend`,
-and I'd've thought that `s_nappend` would be the one
-to update the write pointer??)
-
-#### String modification – `s_tolower`, `s_toupper`
+#### Printing strings – `s_fprint`, `s_print`
 
 **Provided by**: `<ministd_string.h>`
 
-`s_tolower` converts a `String` to lowercase.
+`s_fprint` and `s_print` mimics `fprints` and `prints`,
+printing the contents of the `String` to a file or `stdout`.
 
-Similarly, `s_toupper` converts a `String` to uppercase.
+For more, see the documentation on the `fprint*` family of functions.
 
-**NOTE**: currently there's no check for if the characters are alphabetic,
-meaning that this will corrupt non-alphabetic characters...
-
-#### String parsing – `s_parse`
+#### Scanning strings – `s_fscan`, `s_scan`, `s_fscan_into`, `s_scan_into`
 
 **Provided by**: `<ministd_string.h>`
 
-`s_parse` takes two `String`s,
-and parses a word from the first string
-(either space-separated, or surrounded by single or double quotes)
-appending it to the end of the second string.
+`s_fscan` and `s_scan` mimics `fscans` and `scans`,
+reading a single space-delimited word from the given file or `stdin`
+and returning it as a `String`.
 
-`s_restart` should be called before `s_parse`
-to start passing from the start of the string.
+`s_fscan_into` and `s_scan_into` does the same as `s_fscan` and `s_scan`
+except it scans onto the end of a supplied string,
+rather than returning a new string.
 
-#### String files – `StringFile` and `sf_open`
+#### String files – `StringFile`, `StringReadFile` and `sf_open`, `sf_open_readonly`
 
 **Provided by**: `<ministd_string.h>`
 
@@ -1055,8 +1024,19 @@ which allows the user to use the `FILE` interface to interact with `Strings`,
 meaning that functions from `<ministd_io.h>` and `<ministd_fmt.h>` can be used
 to read from/write to it.
 
-A `StringFile` is created with the `sf_open` function
-which takes in the `String` that the `StringFile` should wrap.
+`StringReadFile` is a similar wrapper,
+but only arounding reading and not writing.
+
+Each `StringFile` and `StringReadFile` keeps its own read pointer
+which starts at the beginning of the `String`,
+from where it reads.
+Neither will read past the end of a `String`.
+
+`StringFile`s write to the end of a `String`,
+and automaticaaly grows the `String` if needed.
+
+`sf_open` is used to create a `StringFile`,
+and `sf_open_readonly` is used to create a `StringReadFile`.
 
 ## IO
 

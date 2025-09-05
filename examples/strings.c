@@ -8,7 +8,6 @@ main(void)
 {
 	String own greeting;
 	String own recipient;
-	String own temp;
 	FILE own file;
 
 	greeting = s_from_cstring("Hello, ", NULL);
@@ -17,9 +16,7 @@ main(void)
 	s_append(recipient, "World!", 6, NULL);
 
 	file = (FILE ref)sf_open_readonly(recipient, NULL);
-	temp = s_fscan(file, NULL);
-	s_sappend(greeting, temp, NULL);
-	s_free(temp);
+	s_fscan_into(greeting, file, NULL);
 	close(file, NULL);
 	free(file);
 
