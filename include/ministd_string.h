@@ -10,6 +10,8 @@ typedef struct String String;
 
 String own s_new(err_t ref err_out);
 String own s_with_capacity(usz cap, err_t ref err_out);
+String own s_from_buffer(const char ref buf, usz cap, err_t ref err_out);
+String own s_from_cstring(const char ref str, err_t ref err_out);
 void s_free(String own s);
 
 char own s_cstr(const String ref this, err_t ref err_out);

@@ -56,6 +56,25 @@ s_with_capacity(usz cap, err_t ref err_out)
 
 	return res;
 }
+String own
+s_from_buffer(const char ref buf, usz cap, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	String own res;
+
+	res = s_with_capacity(cap, &err);
+	TRY_WITH(err, NULL);
+
+	memmove(res->buf, buf, cap);
+	res->len = cap;
+
+	return res;
+}
+String own
+s_from_cstring(const char ref str, err_t ref err_out)
+{
+	return s_from_buffer(str, strlen(str), err_out);
+}
 void
 s_free(String own s)
 {

@@ -1,10 +1,17 @@
-#include <ministd.h>
 #include <ministd_io.h>
+#include <ministd_fmt.h>
+#include <ministd_memory.h>
 #include <ministd_string.h>
 
 const char ref hello_world = "Hello, world";
 
 #define ASSERT(msg) do { if (err) { perror(err, "Something went wrong " msg); exit(127); } } while (0)
+
+void
+s_append_cstring(String ref this, const char ref str, err_t ref err_out)
+{
+	s_append(this, str, strlen(str), err_out);
+}
 
 bool
 test(const char ref name, bool cond)
@@ -12,16 +19,16 @@ test(const char ref name, bool cond)
 	err_t err = ERR_OK;
 	String own string;
 
-	string = s_copy("Test ", &err);
-	ASSERT("while copying string");
-	string = s_append(string, name, &err);
+	string = s_from_cstring("Test ", &err);
+	ASSERT("while creating string");
+	s_append_cstring(string, name, &err);
 	ASSERT("while appending string");
-	string = s_append(string, ": ", &err);
+	s_append_cstring(string, ": ", &err);
 	ASSERT("while appending string");
-	if (cond) string = s_append(string, "PASSED", &err);
-	else string = s_append(string, "FAILED", &err);
+	if (cond) s_append_cstring(string, "PASSED\n", &err);
+	else s_append_cstring(string, "FAILED\n", &err);
 	ASSERT("while appending string");
-	puts(s_to_c(string), NULL);
+	s_print(string, NULL);
 	s_free(string);
 	return cond;
 }
@@ -35,15 +42,23 @@ expect_usz(const char ref name, usz expr, usz expect)
 
 	if (!res) {
 		String own string;
-		string = s_copy("Expected ", &err);
-		ASSERT("while copying string");
-		string = s_append(string, "###", &err); /* TODO: write number to string */
+		StringFile own file;
+
+		string = s_from_cstring("Expected ", &err);
+		ASSERT("while creating string");
+		file = sf_open(string, &err);
+		ASSERT("while opening string file");
+
+		fprintuz(expect, (FILE ref)file, &err);
+		ASSERT("while writing to string file");
+		s_append_cstring(string, ", got ", &err);
 		ASSERT("while appending string");
-		string = s_append(string, ", got ", &err);
-		ASSERT("while appending string");
-		string = s_append(string, "###", &err); /* TODO: write number to string */
-		ASSERT("while appending string");
-		puts(s_to_c(string), NULL);
+		fprintuz(expr, (FILE ref)file, &err);
+		ASSERT("while writing to string file");
+		s_print(string, NULL);
+
+		close((FILE ref)file, NULL);
+		free(file);
 		s_free(string);
 	}
 
@@ -59,21 +74,22 @@ main(void)
 
 	greeting = s_new(&err);
 	ASSERT("while creating new string");
-	s_append(greeting, "Hello, ", &err);
+	s_append_cstring(greeting, "Hello, ", &err);
 	ASSERT("while appending string");
-	s_append(greeting, "world", &err);
+	s_append_cstring(greeting, "world", &err);
 	ASSERT("while appending string");
-	s_putc(greeting, '!', &err);
+	s_push(greeting, '!', &err);
+	s_push(greeting, '\n', &err);
 	ASSERT("while appending character");
 
-	puts(s_to_c(greeting), NULL);
+	s_print(greeting, NULL);
 
 	expect_usz("#1 (strlen)", strlen(hello_world), 12);
 	expect_usz("#2 (strnlen)", strnlen(hello_world, 10), 10);
 	expect_usz("#3 (strnlen)", strnlen(hello_world, 20), 12);
-	test = s_newalloc(1024, &err);
+	test = s_with_capacity(1024, &err);
 	ASSERT("while allocating new string");
-	expect_usz("#4 (s_newalloc)", test->end - test->base, 1024);
+	expect_usz("#4 (s_newalloc)", s_capacity(test), 1024);
 	s_free(test);
 
 	s_free(greeting);
