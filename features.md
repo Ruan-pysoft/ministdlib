@@ -5,6 +5,12 @@ along with their test coverage.
 
 I will also document some of the processes/decisions behind their implementation.
 
+For a nice, formatted view of this documented
+(especially the tables, which is quite ugly in the markdown)
+you can run `md2html features.md | lynx -stdin` on Linux.
+On Arch Linux, `md2html` is provided by the `md4c` package
+and `lynx` is provided by the `lynx` package.
+
 Note that I do not provide the full type signature of each function;
 to find that navigate to the header I indicated the function can be found in
 (located in the `include/` directory)
