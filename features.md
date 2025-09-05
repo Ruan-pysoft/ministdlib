@@ -940,37 +940,123 @@ but with some overflow protection added.
 
 **Provided by**: `<ministd_string.h>`
 
+The same as libc's `strlen` and `strnlen` functions,
+where `strlen` returns the number of bytes before the first null byte
+and `strnlen` returns the same up to a maximum length supplied.
+
+They can be used for finding the length of a cstring.
+
 #### String and StringView types – `String`, `StringView`
 
 **Provided by**: `<ministd_string.h>`
+
+A `String` represents a string with a growable and modifiable buffer
+while a `StringView` represents a view into a string (immutable).
+
+`String`s also contains a "write pointer"
+to keep track of where to append to the string,
+which starts right after the end of the string's data
+but can be moved around with various operations.
 
 #### String macros – `s_to_c`, `s_len`, `s_clone`, `s_as_sv`, `sv_to_c`, `sv_len`, `sv_clone`
 
 **Provided by**: `<ministd_string.h>`
 
+There are various macros for interacting with strings:
+
+ - `s_to_c` extracts a cstring from a `String`
+ - `s_len` gets the length of a `String`
+ - `s_clone` copies a `String` (creates a new `String` with the same data)
+ - `s_as_sv` converts a `String` to a `StringView`
+ - `sv_to_c` extracts a cstring from a `StringView`
+ - `sv_len` gets the length of a `StringView`
+ - `sv_clone` creates a new `String` with the same data as the given `StringView`
+
 #### Creating and destroying strings – `s_new`, `s_free`, `s_newalloc`, `sv_new`, `s_frombuf`
 
 **Provided by**: `<ministd_string.h>`
+
+A new string is created with `s_new`,
+and a string (along with its resources) is freed with `s_free`.
+
+`s_newalloc` creates a new string with a certain capacity.
+
+`sv_new` creates a `StringView` from a given cstring.
+
+`s_frombuf` creates a `String`
+which uses an externally-allocated (and managed) buffer.
 
 #### String management – `s_grow`, `s_terminate`, `s_reset`, `s_restart`, `s_copy`
 
 **Provided by**: `<ministd_string.h>`
 
+`s_grow` grows the `String`'s internal buffer by the specified amount.
+
+`s_terminate` writes a null byte to the `String`'s write pointer.
+
+`s_reset` resets the `String`'s write pointer back to the start
+and then terminates the string.
+
+`s_restart` resets the `String`'s write pointer back to the start
+but does not then terminate the string.
+
+`s_copy` creates a `String` containing the data of a given cstring.
+
 #### String writing – `s_putc`, `s_append`, `s_nappend`, `s_memappend`
 
 **Provided by**: `<ministd_string.h>`
+
+`s_putc` appends a given character to the end of a `String`.
+
+`s_append` appends a given cstring to the end of a `String`,
+but doesn't move the write pointer forward.
+
+`s_nappend` appends a given character array of a given size
+to the end of a `String`,
+but doesn't move the write pointer forward.
+
+`s_memappend` appends a given buffer of characters of a given sight
+to the end of a `String`,
+and moves the write pointer forward.
+
+(I am very confused about the need for both `s_nappend` and `s_memappend`,
+and I'd've thought that `s_nappend` would be the one
+to update the write pointer??)
 
 #### String modification – `s_tolower`, `s_toupper`
 
 **Provided by**: `<ministd_string.h>`
 
+`s_tolower` converts a `String` to lowercase.
+
+Similarly, `s_toupper` converts a `String` to uppercase.
+
+**NOTE**: currently there's no check for if the characters are alphabetic,
+meaning that this will corrupt non-alphabetic characters...
+
 #### String parsing – `s_parse`
 
 **Provided by**: `<ministd_string.h>`
 
+`s_parse` takes two `String`s,
+and parses a word from the first string
+(either space-separated, or surrounded by single or double quotes)
+appending it to the end of the second string.
+
+`s_restart` should be called before `s_parse`
+to start passing from the start of the string.
+
 #### String files – `StringFile` and `sf_open`
 
 **Provided by**: `<ministd_string.h>`
+
+`StringFile` is a wrapper around a `String`
+which allows the user to use the `FILE` interface to interact with `Strings`,
+meaning that functions from `<ministd_io.h>` and `<ministd_fmt.h>` can be used
+to read from/write to it.
+
+A `StringFile` is created with the `sf_open` function
+which takes in the `String` that the `StringFile` should wrap.
 
 ## IO
 
