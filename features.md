@@ -1364,6 +1364,7 @@ taking an argument of the type indicated:
 <thead>
   <tr> <th>function(s)</th> <th>type</th> </tr>
 </thead>
+<tbody>
   <tr> <td><code>fprinth</code> <code>fprinthx</code> <code>fprinthb</code> <code>printh</code> <code>printhx</code> <code>printhb</code></td> <td><code>short</code></td> </tr>
   <tr> <td><code>fprintuh</code> <code>fprintuhx</code> <code>fprintuhb</code> <code>printuh</code> <code>printuhx</code> <code>printuhb</code></td> <td><code>unsigned short</code></td> </tr>
   <tr> <td><code>fprinti</code> <code>fprintix</code> <code>fprintib</code> <code>printi</code> <code>printix</code> <code>printib</code></td> <td><code>int</code></td> </tr>
@@ -1375,6 +1376,7 @@ taking an argument of the type indicated:
   <tr> <td><code>fprints</code> <code>prints</code></td> <td><code>const char ref</code></td> </tr>
   <tr> <td><code>fprintc</code> <code>printc</code></td> <td><code>char</code></td> </tr>
   <tr> <td><code>fprintp</code> <code>printp</code></td> <td><code>const ptr</code></td> </tr>
+</tbody>
 </table>
 
 All `print*` functions are just wrappers over `fprint*(..., stdout, err_out)`.
@@ -1624,25 +1626,131 @@ main(void)
 
 **Provided by**: `<ministd_atomic.h>`
 
+The `memory_fence` function prevents the cpu
+from reordering memory read/writes across the function call.
+
+The `memory order` enumeration defines how strict
+the memory ordering guarantees of an atomic operation should be,
+where `MO_STRICT` prevents all memory reorderings across the operation,
+while `MO_RELAXED` allows some reordering.
+
+For example (as I understand it),
+memory writes could be reordered with relaxed memory ordering:
+
+```c
+some_value = dosomething();
+atomic_store_i(updated, 1, MO_RELAXED);
+/* the assignment to some_value could be moved to here,
+ * meaning an observer will see the old version of some_value,
+ * even though updated is set!
+ */
+```
+
 #### Atomic types – `struct Atomic*` and `atomic_new_*`
 
 **Provided by**: `<ministd_atomic.h>`
+
+The `Atomic*` structs are the core of the atomics support,
+where each atomic struct is actually a thin wrapper around an integer value.
+
+A new atomic is created with the associated `atomic_new_*` function,
+wherein you supply the initial value.
+
+<table>
+<thead>
+  <tr> <th>atomic type</th> <th>integer type</th> <th>function suffix</th> </tr>
+</thead>
+<tbody
+  <tr> <td><code>AtomicC</code></td> <td><code>signed char</code></td> <td><code>_c</code></td> </tr>
+  <tr> <td><code>AtomicUC</code></td> <td><code>unsigned char</code></td> <td><code>_uc</code></td> </tr>
+  <tr> <td><code>AtomicH</code></td> <td><code>short</code></td> <td><code>_h</code></td> </tr>
+  <tr> <td><code>AtomicUH</code></td> <td><code>unsigned short</code></td> <td><code>_uh</code></td> </tr>
+  <tr> <td><code>AtomicI</code></td> <td><code>int</code></td> <td><code>_i</code></td> </tr>
+  <tr> <td><code>AtomicUI</code></td> <td><code>unsigned int</code></td> <td><code>_ui</code></td> </tr>
+  <tr> <td><code>AtomicL</code></td> <td><code>long</code></td> <td><code>_l</code></td> </tr>
+  <tr> <td><code>AtomicUL</code></td> <td><code>unsigned long</code></td> <td><code>_ul</code></td> </tr>
+  <tr> <td><code>AtomicZ</code></td> <td><code>isz</code></td> <td><code>_z</code></td> </tr>
+  <tr> <td><code>AtomicUZ</code></td> <td><code>usz</code></td> <td><code>_uz</code></td> </tr>
+</tbody>
+</table>
 
 #### Loading and storing – `atomic_load_*`, `atomic_store_*`, `atomic_swap_*`
 
 **Provided by**: `<ministd_atomic.h>`
 
-#### Arithmetic and bit operations – `atomic_add_*`, `atomic_sub_*`, `atomic_or_*`, `atomic_xor_*`, `atomic_and_*`
+Basic loading and storing of atomic values is done with `atomic_load_*`, `atomic_store_*`, and `atomic_swap_*`.
+
+`atomic_load_*` takes an atomic and returns its value.
+
+`atomic_store_*` takes an atomic and sets it to a new value.
+
+`atomic_swap_*` takes an atomic,
+sets it to a new value,
+and returns its previous value.
+
+#### Basic operations – `atomic_fetch_add_*`, `atomic_fetch_sub_*`, `atomic_fetch_or_*`, `atomic_fetch_xor_*`, `atomic_fetch_and_*`, `atomic_fetch_min_*`, `atomic_fetch_max_*`
 
 **Provided by**: `<ministd_atomic.h>`
 
-#### Min and max – `atomic_min_*`, `atomic_max_*`
+`atomic_fetch_*` applies the given operation to the atomic's value
+and returns the old value.
 
-**Provided by**: `<ministd_atomic.h>`
+<table>
+<thead>
+  <tr> <th><code>atomic_fetch_XXX_*</code></th> <th>roughly equivalent non-atomic code</th> </tr>
+</thead>
+<tbody>
+  <tr> <th>add</th> <th><code>old_val = atomic, atomic += val, old_val</code></th> </tr>
+  <tr> <th>sub</th> <th><code>old_val = atomic, atomic -= val, old_val</code></th> </tr>
+  <tr> <th>or</th> <th><code>old_val = atomic, atomic |= val, old_val</code></th> </tr>
+  <tr> <th>xor</th> <th><code>old_val = atomic, atomic ^= val, old_val</code></th> </tr>
+  <tr> <th>and</th> <th><code>old_val = atomic, atomic &= val, old_val</code></th> </tr>
+  <tr> <th>min</th> <th><code>old_val = atomic, atomic = (atomic < val ? atomic : val), old_val</code></th> </tr>
+  <tr> <th>max</th> <th><code>old_val = atomic, atomic = (atomic > val ? atomic : val), old_val</code></th> </tr>
+</tbody>
+</table>
 
 #### Compare-exchange – `atomic_compare_exchange_*`
 
 **Provided by**: `<ministd_atomic.h>`
+
+`atomic_compare_exchange_*` is a very powerful operation,
+one which some of the previous ones are implemented with.
+
+Besides the atomic and memory ordering,
+it takes a pointer to the expected value of the atomic
+and the new value the atomic should be set to.
+
+If the atomic matches the old value,
+then it is set to the new value and `true` is returned.
+
+If the atomic does *not* match the old value
+then the old value is updated to the atomic's current value
+and `false` is returned.
+
+As an example, this is roughly how `atomic_fetch_max_*` is implemented
+(here given for `AtomicI`):
+
+```c
+int
+atomic_fetch_max_i(volatile struct AtomicI this, int val, enum memory_order order)
+{
+	int old, new;
+
+	/* get the current value */
+	old = atomic_load_i(this, order);
+
+	do {
+		/* calculate the new value */
+		new = old > val ? old : val;
+	/* and set the atomic, unless it's been changed in the meanwhile,
+	 * if so then try again
+	 */
+	} while (!atomic_compare_exchange_i(this, &old, new, order));
+
+	return new;
+}
+```
 
 ### Spawning subprocesses
 
