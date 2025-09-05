@@ -1721,11 +1721,11 @@ Besides the atomic and memory ordering,
 it takes a pointer to the expected value of the atomic
 and the new value the atomic should be set to.
 
-If the atomic matches the old value,
+If the atomic matches the expected value,
 then it is set to the new value and `true` is returned.
 
 If the atomic does *not* match the old value
-then the old value is updated to the atomic's current value
+then the expected value is updated to the atomic's current value
 and `false` is returned.
 
 As an example, this is roughly how `atomic_fetch_max_*` is implemented
@@ -1767,6 +1767,30 @@ atomic_fetch_max_i(volatile struct AtomicI this, int val, enum memory_order orde
 #### Mutex – `mutex_t` and `mutex_new`, `mutex_try_lock`, `mutex_lock`, `mutex_unlock`
 
 **Provided by**: `<ministd_threads.h>`
+
+A mutex is a simple atomic flag,
+which can be either acquired or released.
+
+Currently, it is implemented with `mutex_t` reffering to `AtomicI`,
+but that could change without warning.
+
+`mutex_new` is used to create a new mutex,
+which is in the released state.
+
+`mutex_try_lock` uses an atomic swap operation
+to set the mutex's state to acquired.
+It then checks the old state,
+and if it was already in an acquired state (ie. someone else is using it)
+then it returns `false`,
+otherwise (ie. we just acquired the lock) it returns `true`.
+
+`mutex_lock` is simply a while loop
+that keeps trying to acquire the lock using `mutex_try_lock`.
+In other words, it blocks the thread until the lock has been acquired,
+implementing a simple spin lock.
+
+`mutex_unlock` stores the released state to the mutex,
+allowing other threads to acquire it.
 
 ## Misc
 
