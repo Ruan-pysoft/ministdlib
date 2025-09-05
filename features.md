@@ -1589,7 +1589,7 @@ TODO expand this example
 
 Also, this example demonstrates that this API isn't properly developed yet...
 
-```
+```c
 #include <ministd_fmt.h>
 #include <ministd_poll.h>
 
