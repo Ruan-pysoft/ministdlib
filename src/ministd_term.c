@@ -35,7 +35,7 @@ csi_helper_n(int n, char end, FILE ref file, err_t ref err_out)
 
 	close(sf, &err);
 	TRY_VOID(err);
-	fprints(s_to_c(str), file, &err);
+	s_fprint(str, file, &err);
 	TRY_VOID(err);
 	s_free(str);
 }
@@ -64,7 +64,7 @@ csi_helper_nm(int n, int m, char end, FILE ref file, err_t ref err_out)
 
 	close(sf, &err);
 	TRY_VOID(err);
-	fprints(s_to_c(str), file, &err);
+	s_fprint(str, file, &err);
 	TRY_VOID(err);
 	s_free(str);
 }

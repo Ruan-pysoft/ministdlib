@@ -6,63 +6,31 @@
 usz strlen(const char ref cstr);
 usz strnlen(const char ref cstr, usz maxlen);
 
-/* Guarantees:
- * size of array base >= end-base
- * ptr < end
- * null byte exists before or at end of array base
- */
-typedef struct StringView {
-	const char ref base; /* view into external string */
-	const char ref end;
-	const char ref ptr;
-} StringView;
-/* Guarantees:
- * size of array base >= end-base
- * ptr < end
- * null byte exists before or at end of array base
- */
-typedef struct String {
-	char *base; /* ownership determined by owned_buffer */
-	char ref end;
-	char ref ptr;
-	bool owned_buffer;
-} String;
-
-#define s_to_c(s) ((s)->base)
-#define s_len(s) ((s)->ptr - (s)->base)
-#define s_clone(s) s_copy((s)->base)
-#define s_as_sv(s) ((StringView ref)s)
-#define sv_to_c(sv) s_to_c(sv)
-#define sv_len(sv) s_len(sv)
-#define sv_clone(sv) s_clone(sv)
+typedef struct String String;
 
 String own s_new(err_t ref err_out);
-void s_free(String own this);
-String own s_newalloc(usz size, err_t ref err_out);
-StringView own sv_new(const char ref cstr, usz cstr_cap, err_t ref err_out);
-String own s_frombuf(ptr buf, usz size, err_t ref err_out);
-/* WARNING: frees string if called on non-owned buffer */
-String own s_grow(String own this, usz growby, err_t ref err_out);
+String own s_with_capacity(usz cap, err_t ref err_out);
+void s_free(String own s);
 
-/* TODO: change all the functions that take & return String own
- * to functions that just take String ref
- */
+char own s_cstr(const String ref this, err_t ref err_out);
 
-void s_putc(String ref this, char c, err_t ref err_out);
-void s_terminate(String ref this);
-String own s_reset(String own this);
-StringView own s_restart(StringView own this);
-String own s_append(String own this, const char ref str, err_t ref err_out);
-String own s_nappend(String own this, const char ref str, usz size, err_t ref err_out);
-String own s_memappend(String own this, const char ref buf, usz size, err_t ref err_out);
-String own s_copy(const char ref str, err_t ref err_out);
-String own s_parse(StringView ref from, String own to, err_t ref err_out);
+usz s_len(const String ref this);
+usz s_capacity(const String ref this);
+void s_reserve(String ref this, usz cap, err_t ref err_out);
+void s_grow(String ref this, usz grow_by, err_t ref err_out);
 
-void s_tolower(String ref this);
-void s_toupper(String ref this);
+void s_clear(String ref this);
+void s_push(String ref this, char c, err_t ref err_out);
+void s_append(String ref this, const char ref data, usz len, err_t ref err_out);
+void s_sappend(String ref this, const String ref other, err_t ref err_out);
+
+isz s_fprint(const String ref this, FILE ref file, err_t ref err_out);
+isz s_print(const String ref this, err_t ref err_out);
 
 typedef struct StringFile StringFile;
+typedef struct StringReadFile StringReadFile;
 
 StringFile own sf_open(String ref string, err_t ref err_out);
+StringReadFile own sf_open_readonly(const String ref string, err_t ref err_out);
 
 #endif /* _RM_STD_STRING_H */

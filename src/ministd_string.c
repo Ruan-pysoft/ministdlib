@@ -1,3 +1,4 @@
+#include "ministd_error.h"
 #include <ministd_string.h>
 
 #include <ministd_io.h>
@@ -22,329 +23,266 @@ strnlen(const char ref cstr, usz maxlen)
 	return len;
 }
 
+#define DEFAULT_STRING_SIZE 128
+
+struct String {
+	char own buf;
+	usz len;
+	usz cap;
+};
+
 String own
 s_new(err_t ref err_out)
 {
-	return s_newalloc(128, err_out);
-}
-void
-s_free(String own this)
-{
-	if (this->owned_buffer) free(this->base);
-	free(this);
+	return s_with_capacity(DEFAULT_STRING_SIZE, err_out);
 }
 String own
-s_newalloc(usz n, err_t ref err_out)
+s_with_capacity(usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	String own result;
+	String own res;
 
-	if (n == 0) return NULL;
-
-	result = alloc(sizeof(String), &err);
+	res = alloc(sizeof(*res), &err);
 	TRY_WITH(err, NULL);
-	if (result == NULL) return NULL;
 
-	result->base = alloc(n, &err);
-	if (err) {
-		free(result);
+	res->buf = alloc(cap, &err);
+	if (err != ERR_OK) {
+		free(res);
+
 		ERR_WITH(err, NULL);
 	}
-	if (result->base == NULL) {
-		free(result);
-		return NULL;
-	}
+	res->cap = cap;
+	res->len = 0;
 
-	result->end = result->base + n;
-	result->ptr = result->base;
-	*result->ptr = 0;
-
-	result->owned_buffer = true;
-
-	return result;
+	return res;
 }
-StringView own
-sv_new(const char ref cstr, usz cstr_cap, err_t ref err_out)
+void
+s_free(String own s)
+{
+	free(s->buf);
+	free(s);
+}
+
+char own
+s_cstr(const String ref this, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	StringView own result;
-	usz len;
+	char own res;
 
-	len = strnlen(cstr, cstr_cap);
-	if (len == cstr_cap) return NULL;
-
-	result = alloc(sizeof(StringView), &err);
+	res = alloc(this->len + 1, &err);
 	TRY_WITH(err, NULL);
-	if (result == NULL) return NULL;
 
-	result->base = cstr;
-	result->end = result->base + cstr_cap;
-	result->ptr = result->base + len;
+	memmove(res, this->buf, this->len);
+	res[this->len] = 0;
 
-	return result;
+	return res;
 }
-String own
-s_frombuf(ptr buf, usz size, err_t ref err_out)
+
+usz
+s_len(const String ref this)
+{
+	return this->len;
+}
+usz
+s_capacity(const String ref this)
+{
+	return this->cap;
+}
+void
+s_reserve(String ref this, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	String own result;
 
-	if (size == 0) return NULL;
+	if (cap == this->cap) return;
 
-	result = alloc(sizeof(String), &err);
-	TRY_WITH(err, NULL);
-	if (result == NULL) return NULL;
+	this->buf = realloc(this->buf, cap, &err);
+	TRY_VOID(err);
+	this->cap = cap;
 
-	result->base = buf;
-	result->end = (char*)buf + size;
-	result->ptr = result->end;
-	*result->ptr = 0;
-
-	result->owned_buffer = false;
-
-	return result;
+	if (this->len > cap) this->len = cap;
 }
-String own
-s_grow(String own this, usz growby, err_t ref err_out)
+void
+s_grow(String ref this, usz grow_by, err_t ref err_out)
 {
-	const usz cap = this == NULL ? 0 : this->end - this->base;
-	const usz len = this == NULL ? 0 : s_len(this);
-
-	err_t err = ERR_OK;
-
-	if (this == NULL) return NULL;
-
-	if (!this->owned_buffer) {
-		s_free(this);
-		return NULL;
-	}
-
-	this->base = realloc(this->base, cap+growby, &err);
-	if (err) {
-		s_free(this);
-		ERR_WITH(err, NULL);
-	}
-	if (this->base == NULL) {
-		s_free(this);
-		return NULL;
-	}
-
-	this->end = this->base + cap+growby;
-	this->ptr = this->base + len;
-
-	return this;
+	s_reserve(this, this->cap + grow_by, err_out);
 }
 
 void
-s_putc(String ref this, char c, err_t ref err_out)
+s_clear(String ref this)
 {
-	if (this == NULL) return;
-
-	*(this->ptr++) = c;
-	if (this->ptr == this->end) this = s_grow(this, s_len(this), err_out);
-	if (this != NULL) *this->ptr = 0;
+	this->len = 0;
 }
 void
-s_terminate(String ref this)
-{
-	if (this != NULL && this->ptr != NULL) *this->ptr = 0;
-}
-String own
-s_reset(String own this)
-{
-	if (this == NULL) return NULL;
-
-	this->ptr = this->base;
-	if (this->ptr != NULL) *this->ptr = 0;
-
-	return this;
-}
-StringView own
-s_restart(StringView own this)
-{
-	if (this == NULL) return NULL;
-
-	this->ptr = this->base;
-
-	return this;
-}
-String own
-s_append(String own this, const char ref str, err_t ref err_out)
-{
-	return s_nappend(this, str, strlen(str), err_out);
-}
-String own
-s_nappend(String own this, const char ref str, usz size, err_t ref err_out)
-{
-	usz grow_by, i;
-	const usz left = this == NULL ? 0 : (this->end-this->base) - s_len(this);
-
-	if (this == NULL) return NULL;
-
-	grow_by = size+1;
-	if (grow_by < (usz)(this->end-this->base)) grow_by = this->end-this->base;
-
-	if (left < size+1) this = s_grow(this, grow_by, err_out);
-	if (this == NULL) return NULL;
-
-	for (i = 0; i < size && str[i] != 0; ++i) {
-		*(this->ptr++) = str[i];
-	}
-	*this->ptr = 0;
-
-	return this;
-}
-String own
-s_memappend(String own this, const char ref buf, usz size, err_t ref err_out)
-{
-	usz grow_by, i;
-	const usz left = (this->end-this->base) - s_len(this);
-
-	grow_by = size+1;
-	if (grow_by < (usz)(this->end-this->base)) grow_by = this->end-this->base;
-
-	if (left < size+1) this = s_grow(this, grow_by, err_out);
-	if (this == NULL) return NULL;
-
-	for (i = 0; i < size; ++i) {
-		this->ptr[i] = buf[i];
-	}
-	this->ptr += size;
-	*this->ptr = 0;
-
-	return this;
-}
-String own
-s_copy(const char ref str, err_t ref err_out)
+s_push(String ref this, char c, err_t ref err_out)
 {
 	err_t err = ERR_OK;
-	String own result;
 
-	result = s_new(&err);
-	TRY_WITH(err, NULL);
-	return s_append(result, str, err_out);
+	if (this->len == this->cap) {
+		s_grow(this, this->len, &err);
+		TRY_VOID(err);
+	}
+
+	this->buf[this->len++] = c;
 }
-String own
-s_parse(StringView ref from, String own to, err_t ref err_out)
+void
+s_append(String ref this, const char ref data, usz len, err_t ref err_out)
 {
-	const char ref start, ref end;
 	err_t err = ERR_OK;
-	usz toklen;
+	const usz free_bytes = this->cap - this->len;
+	const usz over_capacity = len > free_bytes ? len - free_bytes : 0;
+	usz grow_by = over_capacity != 0 ? this->cap : 0;
 
-	start = from->ptr;
-	while (*start != 0 && (*start == ' ' || *start == '\t'
-		|| *start == '\n')) ++start;
+	while (grow_by < over_capacity) grow_by *= 2;
 
-	if (*start == '\'') {
-		++start;
-		end = start;
-		while (*end != 0 && *end != '\'') ++end;
-	} else if (*start == '"') {
-		++start;
-		end = start;
-		while (*end != 0 && *end != '"') ++end;
-	} else {
-		end = start;
-		while (*end != 0 && *end != ' ' && *end != '\t'
-			&& *end != '\n') ++end;
-	}
+	s_grow(this, grow_by, &err);
+	TRY_VOID(err);
 
-	toklen = end - start;
-	if (toklen == 0) return to;
-
-	from->ptr = end;
-
-	if (to->ptr != to->base) s_putc(to, ' ', &err);
-	TRY_WITH(err, NULL);
-	return s_memappend(to, start, end - start, err_out);
-}
-
-void
-s_tolower(String ref this)
-{
-	char ref p;
-	const char lower_bit = 'a' ^ 'A';
-
-	for (p = this->base; p < this->ptr; ++p) {
-		*p |= lower_bit;
-	}
+	memmove(&this->buf[this->len], data, len);
+	this->len += len;
 }
 void
-s_toupper(String ref this)
+s_sappend(String ref this, const String ref other, err_t ref err_out)
 {
-	char ref p;
-	const char upper_mask = ~('a' ^ 'A');
-
-	for (p = this->base; p < this->ptr; ++p) {
-		*p &= upper_mask;
-	}
+	s_append(this, other->buf, other->len, err_out);
 }
+
+isz
+s_fprint(const String ref this, FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	usz written = 0;
+
+	while (written < this->len) {
+		usz bytes_written;
+
+		bytes_written = write(
+			file, (ptr)(this->buf + written), this->len - written,
+			&err
+		);
+		TRY_WITH(err, 0);
+		if (bytes_written == 0) ERR_WITH(ERR_IO, 0);
+
+		written += bytes_written;
+	}
+
+	return written;
+}
+isz
+s_print(const String ref this, err_t ref err_out)
+{ return s_fprint(this, stdout, err_out); }
 
 struct StringFile {
 	FILE ptrs;
-	String ref s;
-	usz content_len;
+	String ref str;
+	usz read_pos;
+};
+struct StringReadFile {
+	FILE ptrs;
+	const String ref str;
+	usz read_pos;
 };
 
-usz
-sf_read(StringFile ref file, ptr buf, usz cap, err_t ref err_out)
+static usz srf_read(StringReadFile ref this, ptr buf, usz cap,
+		    err_t ref err_out);
+static usz sf_write(StringFile ref this, const ptr buf, usz cap,
+		    err_t ref err_out);
+static usz srf_write(StringReadFile ref this, const ptr buf, usz cap,
+		     err_t ref err_out);
+static void srf_close(StringReadFile ref this, err_t ref err_out);
+static usz srf_run(StringReadFile ref this, enum FILE_OP op, err_t ref err_out);
+static const FILE sf_ptrs = {
+	(FILE_read_t)srf_read,
+	(FILE_write_t)sf_write,
+	(FILE_close_t)srf_close,
+	(FILE_run_t)srf_run,
+	0, false,
+};
+static const FILE srf_ptrs = {
+	(FILE_read_t)srf_read,
+	(FILE_write_t)srf_write,
+	(FILE_close_t)srf_close,
+	(FILE_run_t)srf_run,
+	0, false,
+};
+
+StringFile own
+sf_open(String ref string, err_t ref err_out)
 {
-	char ref readtill;
-	char ref bufptr;
-	const char ref initial = file->s->ptr;
+	err_t err = ERR_OK;
+	StringFile own res;
 
-	/* TODO: this function is almost certainly incorrect,
-	 * but I'm too tired to untangle it right now */
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
 
-	(void)err_out;
+	res->ptrs = sf_ptrs;
+	res->str = string;
+	res->read_pos = 0;
 
-	readtill = file->s->base + file->content_len;
-	if ((usz)(readtill - file->s->ptr) > cap) readtill = file->s->ptr+cap;
-
-	/* TODO: use something like memcpy here */
-	for (bufptr = buf; file->s->ptr < readtill; ++file->s->ptr, ++bufptr) {
-		*bufptr = *file->s->ptr;
-	}
-
-	return file->s->ptr - initial;
+	return res;
 }
-usz
-sf_write(StringFile ref file, const ptr buf, usz cap, err_t ref err_out)
+StringReadFile own
+sf_open_readonly(const String ref string, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	StringReadFile own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->ptrs = srf_ptrs;
+	res->str = string;
+	res->read_pos = 0;
+
+	return res;
+}
+
+static usz
+srf_read(StringReadFile ref this, ptr buf, usz cap, err_t ref err_out)
+{
+	const usz readable = this->str->cap - this->read_pos;
+	const usz to_read = readable < cap ? readable : cap;
+
+	(void) err_out;
+
+	memmove(buf, &this->str->buf[this->read_pos], to_read);
+	this->read_pos += to_read;
+
+	return to_read;
+}
+static usz
+sf_write(StringFile ref this, const ptr buf, usz cap, err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
-	file->s = s_memappend(file->s, (char ref)buf, cap, &err);
+	s_append(this->str, buf, cap, &err);
 	TRY_WITH(err, 0);
-	if (file->s == 0) {
-		file->content_len = 0;
-		return -1;
-	}
-	if ((usz)(file->s->ptr - file->s->base) > file->content_len) {
-		file->content_len = file->s->ptr - file->s->base;
-	}
 
 	return cap;
 }
-void
-sf_close(StringFile ref file, err_t ref err_out)
+static usz
+srf_write(StringReadFile ref this, const ptr buf, usz cap, err_t ref err_out)
 {
-	(void)err_out;
+	(void) this;
+	(void) buf;
+	(void) cap;
 
-	file->s = 0;
-	file->content_len = 0;
+	ERR_WITH(ERR_BADF, 0);
 }
-usz
-sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
+static void
+srf_close(StringReadFile ref this, err_t ref err_out)
 {
-	usz r;
-	r = 0;
+	(void) this;
+	(void) err_out;
+}
+static usz
+srf_run(StringReadFile ref this, enum FILE_OP op, err_t ref err_out)
+{
+	usz r = 0;
 
-	(void)file;
-	(void)err_out;
+	(void) this;
 
 	switch (op) {
-		case FO_FLUSH: {
-		break; }
+		case FO_FLUSH: break;
 		case FO_HASFD: {
 			r = false;
 		break; }
@@ -354,29 +292,4 @@ sf_misc(StringFile ref file, enum FILE_OP op, err_t ref err_out)
 	}
 
 	return r;
-}
-FILE string_file_ptrs = {
-	(FILE_read_t)sf_read,   /* read */
-	(FILE_write_t)sf_write, /* write */
-	(FILE_close_t)sf_close, /* close */
-	(FILE_run_t)sf_misc,    /* run */
-	0,                      /* ungot */
-	false,                  /* has_ungot */
-};
-
-StringFile own
-sf_open(String ref string, err_t ref err_out)
-{
-	err_t err = ERR_OK;
-	StringFile ref result;
-
-	result = alloc(sizeof(StringFile), &err);
-	TRY_WITH(err, NULL);
-	if (result == NULL) return NULL;
-
-	result->ptrs = string_file_ptrs;
-	result->s = string;
-	result->content_len = string->ptr - string->base;
-
-	return result;
 }
