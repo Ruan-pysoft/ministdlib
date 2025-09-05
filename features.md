@@ -1025,7 +1025,7 @@ meaning that functions from `<ministd_io.h>` and `<ministd_fmt.h>` can be used
 to read from/write to it.
 
 `StringReadFile` is a similar wrapper,
-but only arounding reading and not writing.
+but only around reading and not writing.
 
 Each `StringFile` and `StringReadFile` keeps its own read pointer
 which starts at the beginning of the `String`,
@@ -1033,7 +1033,7 @@ from where it reads.
 Neither will read past the end of a `String`.
 
 `StringFile`s write to the end of a `String`,
-and automaticaaly grows the `String` if needed.
+and automatically grows the `String` if needed.
 
 `sf_open` is used to create a `StringFile`,
 and `sf_open_readonly` is used to create a `StringReadFile`.
