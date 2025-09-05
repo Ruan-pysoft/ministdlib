@@ -1861,9 +1861,38 @@ allowing other threads to acquire it.
 
 **Provided by**: `<ministd_time.h>`
 
+`nanosleep` is just a thin wrapper around the `nanosleep` syscall.
+
+The `timespec` struct is used to represent durations
+by the `nanosleep` function,
+and it has two fields:
+ - `tv_sec` specifies the number of seconds
+ - `tv_nsec` specifies the number of nanoseconds
+   (billionths of a second, `second / 1000 / 1000 / 1000`)
+Note that neither field should be negative,
+and `tv_nsec` should be strictly less than a billion (`1000 * 1000 * 1000`).
+
+`nanosleep` takes two pointers to `timespec` structs,
+the time to sleep as the first argument
+and the struct to store the remaining time as the second.
+It will then attempt to sleep for a least as long as the time specified,
+returning when all the time has elapsed or an interrupt is received.
+
+If the sleep has been interrupted then it will indicate an `ERR_INTR` error,
+and set the second argument as the amount of time that is left.
+
 #### High-level sleeping – `millisleep`, `sleep`
 
 **Provided by**: `<ministd_time.h>`
+
+`sleep` and `millisleep` functions are higher-level functions
+which automatically handles the `timespec` structs
+and continuing after interrupts.
+
+`sleep` takes the number of seconds to sleep as a `float`.
+
+`millisleep` takes the number of milliseconds (thousands of a second) to sleep
+as an `unsigned int`.
 
 ### `__stack_chk_fail`
 
