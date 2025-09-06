@@ -71,7 +71,6 @@ panic(isz exitcode)
 	_syscall1(__NR_exit, dummy, exitcode);
 	__builtin_unreachable();
 }
-int main(void);
 extern void _ministd_io_init(void);
 void
 setup(void)
@@ -79,6 +78,20 @@ setup(void)
 	for (__envc = 0; __envp[__envc] != NULL; ++__envc);
 
 	_ministd_io_init();
+}
+static void
+_main_starter(void)
+{
+	err_t err = ERR_OK;
+
+	main(&err);
+
+	if (err != ERR_OK) {
+		perror(err, "while executing program main");
+	}
+
+	exit((int)err);
+	__builtin_unreachable();
 }
 void
 _start(void)
@@ -108,7 +121,7 @@ _start(void)
 
 	setup();
 
-	exit(main());
+	_main_starter();
 	__builtin_unreachable();
 }
 
