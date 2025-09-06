@@ -7,3 +7,4 @@
 -Wall
 -Wextra
 -Wno-builtin-declaration-mismatch
+-DTEST

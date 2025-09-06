@@ -45,6 +45,7 @@ const char ref err_repr(err_t err)
 		case ERR_OVERFLOW: return "ERR_OVERFLOW";
 		case ERR_EOF: return "ERR_EOF";
 		case ERR_PARSE: return "ERR_PARSE";
+		case ERR_ASSERT: return "ERR_ASSERT";
 	}
 
 	return "ERR_[UNKNOWN]";
@@ -93,6 +94,7 @@ err_str(err_t err)
 		case ERR_OVERFLOW: return "Operation would result in overflow";
 		case ERR_EOF: return "Encountered EOF";
 		case ERR_PARSE: return "Parse error";
+		case ERR_ASSERT: return "Assertion error";
 	}
 
 	return "unknown error code";

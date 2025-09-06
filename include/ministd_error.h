@@ -54,7 +54,8 @@ typedef enum err_t {
 	/* custom errnos */
 	ERR_OVERFLOW,			/* operation would cause overflow */
 	ERR_EOF,			/* Encountered EOF */
-	ERR_PARSE			/* parse error */
+	ERR_PARSE,			/* parse error */
+	ERR_ASSERT			/* assertion error */
 
 } err_t;
 
