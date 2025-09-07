@@ -6,10 +6,12 @@
 char *allocs[1024];
 const char *test_string = "Hai #.... :3";
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	int i;
+
+	(void) err_out;
 
 	puts("Starting memory test...", NULL);
 
@@ -35,6 +37,4 @@ main(void)
 	for (i = 0; i < 1024; ++i) {
 		free(allocs[i]);
 	}
-
-	return 0;
 }

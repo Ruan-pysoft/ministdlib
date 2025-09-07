@@ -17,10 +17,12 @@ fib(int n)
 	return a;
 }
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	int i;
+
+	(void) err_out;
 
 	puts("Hello, world!", NULL);
 	for (i = 0; i < argc(); ++i) {
@@ -29,5 +31,5 @@ main(void)
 		else putc('\n', NULL);
 	}
 
-	return 42;
+	exit(42);
 }

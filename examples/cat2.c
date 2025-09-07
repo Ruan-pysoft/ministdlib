@@ -6,8 +6,8 @@
 
 char buf[BUFCAP];
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	err_t err = ERR_OK;
 
@@ -16,8 +16,6 @@ main(void)
 		;fputs(buf, stdout, &err)
 	) if (err) {
 		perror(err, "Oops, something went wrong");
-		return -1;
+		ERR_VOID(err);
 	}
-
-	return 0;
 }

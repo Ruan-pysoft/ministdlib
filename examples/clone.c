@@ -166,8 +166,10 @@ thread_demo(err_t ref err_out)
 	free(stack);
 }
 
-int
-main(void)
+#define ERR(err, msg) do { if (err != ERR_OK) { perror(err, msg); ERR_VOID(err); } } while (0)
+
+void
+main(err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	ptr rbp;
@@ -177,34 +179,17 @@ main(void)
 	fprints("Parent stack base at 0x", stderr, &err);
 	fprintp(rbp, stderr, &err);
 	fprintc('\n', stderr, &err);
-	if (err != ERR_OK) {
-		perror(err, "Error while printing stack base address");
-		exit(-1);
-	}
+	ERR(err, "Error while printing stack base address");
 
 	fprints("\n=====\n\n", stderr, &err);
-	if (err != ERR_OK) {
-		perror(err, "Error while printing stack base address");
-		exit(-1);
-	}
+	ERR(err, "Error while printing stack base address");
 
 	process_demo(&err);
-	if (err != ERR_OK) {
-		perror(err, "Error in process demo");
-		exit(-1);
-	}
+	ERR(err, "Error in process demo");
 
 	fprints("\n=====\n\n", stderr, &err);
-	if (err != ERR_OK) {
-		perror(err, "Error while printing stack base address");
-		exit(-1);
-	}
+	ERR(err, "Error while printing stack base address");
 
 	thread_demo(&err);
-	if (err != ERR_OK) {
-		perror(err, "Error in thread demo");
-		exit(-1);
-	}
-
-	return 0;
+	ERR(err, "Error in thread demo");
 }

@@ -86,14 +86,16 @@ fprintgrouped(usz n, FILE ref file, err_t ref err_out)
 	}
 }
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	/* simulate a million rounds of the game
 	 * described in youtu.be/LUCvSsx6-EU "A Finite Game of Infinite Rounds"
 	 */
 	usz loops = 1000 * 1000, i;
 	usz total_rounds = 0, max_rounds = 0;
+
+	(void) err_out;
 
 	state = 42;
 
@@ -133,6 +135,4 @@ main(void)
 			printc('\n', NULL);
 		}
 	}
-
-	return 0;
 }

@@ -5,18 +5,18 @@
 
 char buf[BUFCAP];
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	isz bytes_read;
+
+	(void) err_out;
 
 	for (
 		;(bytes_read = read(stdin, buf, BUFCAP, NULL))
 		;write(stdout, buf, bytes_read, NULL)
 	) if (!-~bytes_read) {
 		write(stderr, "Oops, something went wrong!", 27, NULL);
-		return -1;
+		exit(-1);
 	}
-
-	return 0;
 }

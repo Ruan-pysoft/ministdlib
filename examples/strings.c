@@ -3,12 +3,14 @@
 #include <ministd_memory.h>
 #include <ministd_string.h>
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	String own greeting;
 	String own recipient;
 	FILE own file;
+
+	(void) err_out;
 
 	greeting = s_from_cstring("Hello, ", NULL);
 	recipient = s_with_capacity(1024, NULL);
@@ -25,6 +27,4 @@ main(void)
 
 	s_free(greeting);
 	s_free(recipient);
-
-	return 0;
 }

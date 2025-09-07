@@ -35,13 +35,15 @@ atoi(char ref buf)
 	return res;
 }
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	int r;
 	int x, y, t;
 	float fps;
 	float frametime;
+
+	(void) err_out;
 
 	prints("Sphere radius> ", NULL);
 	getline(buf, 10, NULL);
@@ -108,6 +110,4 @@ main(void)
 		}
 		sleep(frametime, NULL);
 	}
-
-	return 0;
 }
