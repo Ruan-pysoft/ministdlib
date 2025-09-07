@@ -1,10 +1,10 @@
 #include <ministd.h>
 #include <ministd_io.h>
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
-	puts("Hello, world!", NULL);
+	(void) err_out;
 
-	return 0;
+	puts("Hello, world!", NULL);
 }

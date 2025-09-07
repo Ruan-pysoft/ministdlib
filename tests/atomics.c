@@ -86,13 +86,17 @@ int thread_fn(void ref arg) {
 const char ref MSG_LOWER = "hello, world\n";
 const char lowercase_bit = 'a'^'A';
 
-int main(void) {
+void
+main(err_t ref err_out)
+{
 	struct AtomicC own ch = atomic_new_c(0, NULL);
 	struct AtomicI own counter = atomic_new_i(0, NULL);
 	struct clone_args cl_args = { 0 };
 	usz i;
 	char c;
 	int num;
+
+	(void) err_out;
 
 	for (i = 0; true; ++i) {
 		atomic_store_c(ch, MSG_LOWER[i], MO_STRICT);
@@ -109,7 +113,7 @@ int main(void) {
 			print(s, "', but found '");
 			print(c, c);
 			print(s, "'.\n");
-			return 1;
+			exit(1);
 		}
 
 		c = atomic_load_c(ch, MO_STRICT);
@@ -141,6 +145,4 @@ int main(void) {
 	#define X(SUFF, suff, type) atomic_test_ ## suff();
 	LIST_OF_ATOMICS
 	#undef X
-
-	return 0;
 }

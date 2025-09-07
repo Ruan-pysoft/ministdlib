@@ -79,6 +79,7 @@ setup(void)
 
 	_ministd_io_init();
 }
+void main(err_t ref err_out);
 static void
 _main_starter(void)
 {

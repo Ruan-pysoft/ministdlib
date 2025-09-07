@@ -4,9 +4,11 @@
 
 char buf[1024];
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
+	(void) err_out;
+
 	puts("Hello, world!", NULL); /* output to stdout with newline */
 	putc('!', NULL);             /* output single char to stdout */
 	fputs("And no auto newline here...", stdout, NULL);
@@ -23,6 +25,4 @@ main(void)
 
 	/* TODO: test stdin */
 	/* TODO: open file */
-
-	return 0;
 }

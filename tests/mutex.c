@@ -36,10 +36,14 @@ int thread_fn(void ref void_arg) {
 const char ref MSG_LOWER = "hello, world\n";
 const char lowercase_bit = 'a'^'A';
 
-int main(void) {
+void
+main(err_t ref err_out)
+{
 	mutex_t own lock = mutex_new(NULL);
 	struct clone_args cl_args = { 0 };
 	usz i;
+
+	(void) err_out;
 
 	cl_args.flags = CLONE_VM | CLONE_THREAD | CLONE_FILES | CLONE_FS | CLONE_IO | CLONE_SIGHAND | CLONE_SYSVSEM;
 
@@ -69,6 +73,4 @@ int main(void) {
 		printi(has_executed[i], NULL);
 		printc('\n', NULL);
 	}
-
-	return 0;
 }

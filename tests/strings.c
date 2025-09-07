@@ -1,3 +1,4 @@
+#include "ministd_error.h"
 #include <ministd_io.h>
 #include <ministd_fmt.h>
 #include <ministd_memory.h>
@@ -65,12 +66,14 @@ expect_usz(const char ref name, usz expr, usz expect)
 	return res;
 }
 
-int
-main(void)
+void
+main(err_t ref err_out)
 {
 	err_t err = ERR_OK;
 	String own greeting;
 	String own test;
+
+	(void) err_out;
 
 	greeting = s_new(&err);
 	ASSERT("while creating new string");
@@ -93,6 +96,4 @@ main(void)
 	s_free(test);
 
 	s_free(greeting);
-
-	return 0;
 }
