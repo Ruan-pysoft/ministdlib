@@ -363,3 +363,45 @@ srf_run(StringReadFile ref this, enum FILE_OP op, err_t ref err_out)
 
 	return r;
 }
+
+#ifdef TEST
+#include <_ministd_tests.h>
+
+static const char ref hello_world = "Hello, world";
+
+static void
+s_append_cstring(String ref this, const char ref str, err_t ref err_out)
+{
+	s_append(this, str, strlen(str), err_out);
+}
+TEST_FN(string) {
+	err_t err = ERR_OK;
+	String own greeting;
+	String own test;
+
+	greeting = s_new(&err);
+	ASSERT(err == ERR_OK, "while creating new string");
+	s_append_cstring(greeting, "Hello, ", &err);
+	ASSERT(err == ERR_OK, "while appending string");
+	s_append_cstring(greeting, "world", &err);
+	ASSERT(err == ERR_OK, "while appending string");
+	s_push(greeting, '!', &err);
+	s_push(greeting, '\n', &err);
+	ASSERT(err == ERR_OK, "while appending character");
+
+	s_fprint(greeting, outf, NULL);
+
+	ASSERT_EQ_MSG(uz, strlen(hello_world), 12, "#1 (strlen)");
+	ASSERT_EQ_MSG(uz, strnlen(hello_world, 10), 10, "#2 (strnlen)");
+	ASSERT_EQ_MSG(uz, strnlen(hello_world, 20), 12, "#3 (strnlen)");
+	test = s_with_capacity(1024, &err);
+	ASSERT(err == ERR_OK, "while allocating new string");
+	ASSERT_EQ_MSG(uz, s_capacity(test), 1024, "#4 (s_newalloc)");
+	s_free(test);
+
+	s_free(greeting);
+}
+TEST_OUTPUT(string) =
+	"Hello, world!\n"
+;
+#endif

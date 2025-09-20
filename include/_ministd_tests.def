@@ -13,3 +13,6 @@ X(memory)
 
 /* ministd_threads.c */
 X(mutex)
+
+/* ministd_string.c */
+X(string)
