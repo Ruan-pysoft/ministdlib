@@ -140,13 +140,17 @@ __stack_chk_fail(void)
 }
 
 #ifdef TEST
-void test_atexit_fn(void) {}
+void TEST_FN_NAME(atexit_helper)(void) {}
 TEST_FN(atexit) {
 	isz printuzx(usz, err_t ref);
 
-	atexit(test_atexit_fn);
+	atexit(TEST_FN_NAME(atexit_helper));
 
-	ASSERT_EQ(uzx, (usz)exithooks[exithooks_count-1], (usz)test_atexit_fn);
+	ASSERT_EQ(
+		uzx,
+		(usz)exithooks[exithooks_count-1],
+		(usz)TEST_FN_NAME(atexit_helper)
+	);
 
 	--exithooks_count;
 }

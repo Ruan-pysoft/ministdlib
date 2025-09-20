@@ -43,7 +43,7 @@ static TEST_OUTPUT(assert) =
 	"Assertion failed src/_ministd_tests.c:-1 :: 6 * 7 (42) == 13 * 4 (52)\n"
 	"Assertion failed src/_ministd_tests.c:-1 :: 6<<1|1 (13) != 1337 / 100 (13)\n"
 	"Assertion failed src/_ministd_tests.c:-1 :: err == ERR_OK\n"
-	"Some important operation produced an error!\n"
+	"Failed with message: Some important operation produced an error!\n"
 ;
 
 #define X(name) TEST_FN(name); extern TEST_OUTPUT(name);
@@ -61,7 +61,7 @@ static struct test {
 };
 static const usz tests_len = sizeof(tests)/sizeof(*tests);
 
-static bool
+static isz
 string_cmp_cstring(const String ref str, const char ref cstring)
 {
 	usz i;
@@ -70,18 +70,18 @@ string_cmp_cstring(const String ref str, const char ref cstring)
 
 	if (len != s_len(str)) {
 		free(str_cstr);
-		return false;
+		return -2;
 	}
 
 	for (i = 0; i < len; ++i) {
 		if (str_cstr[i] != cstring[i]) {
 			free(str_cstr);
-			return false;
+			return i;
 		}
 	}
 
 	free(str_cstr);
-	return true;
+	return -1;
 }
 
 void
@@ -98,6 +98,7 @@ test_main(err_t ref err_out)
 
 	for (i = 0; i < tests_len; ++i) {
 		err_t err = ERR_OK;
+		isz first_difference;
 
 		s_clear(str);
 
@@ -110,19 +111,60 @@ test_main(err_t ref err_out)
 		tests[i].test(file, &err);
 		SET_ERR(err);
 
-		if (err == ERR_OK && !string_cmp_cstring(str, tests[i].expected_output)) {
+		if (err == ERR_OK) first_difference = string_cmp_cstring(str, tests[i].expected_output);
+
+		if (err == ERR_OK && first_difference == -2) {
 			term_set_graphics(FG_RED, stderr, NULL);
 			fprints("TEST ", stderr, NULL);
 			term_set_graphics(FG_YELLOW, stderr, NULL);
 			fprints(tests[i].name, stderr, NULL);
 			term_set_graphics(FG_RED, stderr, NULL);
 			fprints(" FAILED WITH INCORRECT OUTPUT!\n", stderr, NULL);
+			fprints("Expected output length ", stderr, NULL);
+			fprintuz(strlen(tests[i].expected_output), stderr, NULL);
+			fprints(", got length ", stderr, NULL);
+			fprintuz(s_len(str), stderr, NULL);
+			fprintc('\n', stderr, NULL);
 			term_set_graphics(TG_RESET, stderr, NULL);
 
 			fprints("GOT:\n", stderr, NULL);
+			term_set_graphics(FG_BLUE, stderr, NULL);
 			s_fprint(str, stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
 			fprints("EXPECTED:\n", stderr, NULL);
+			term_set_graphics(FG_BLUE, stderr, NULL);
 			fprints(tests[i].expected_output, stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
+
+		} else if (err == ERR_OK && first_difference >= 0) {
+			term_set_graphics(FG_RED, stderr, NULL);
+			fprints("TEST ", stderr, NULL);
+			term_set_graphics(FG_YELLOW, stderr, NULL);
+			fprints(tests[i].name, stderr, NULL);
+			term_set_graphics(FG_RED, stderr, NULL);
+			fprints(" FAILED WITH INCORRECT OUTPUT!\n", stderr, NULL);
+			fprints("Expected character ", stderr, NULL);
+			fprinti(tests[i].expected_output[first_difference], stderr, NULL);
+			fprints(" (", stderr, NULL);
+			fprintc(tests[i].expected_output[first_difference], stderr, NULL);
+			fprints(") at index ", stderr, NULL);
+			fprinti(first_difference, stderr, NULL);
+			fprints(", got ", stderr, NULL);
+			/* naughty! TODO: expose this through <ministd_string.h> */
+			fprinti((*(char ref ref)str)[first_difference], stderr, NULL);
+			fprints(" (", stderr, NULL);
+			fprintc((*(char ref ref)str)[first_difference], stderr, NULL);
+			fprints(")\n ", stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
+
+			fprints("GOT:\n", stderr, NULL);
+			term_set_graphics(FG_BLUE, stderr, NULL);
+			s_fprint(str, stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
+			fprints("EXPECTED:\n", stderr, NULL);
+			term_set_graphics(FG_BLUE, stderr, NULL);
+			fprints(tests[i].expected_output, stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
 		} else if (err == ERR_OK) {
 			++tests_passed;
 
@@ -144,6 +186,11 @@ test_main(err_t ref err_out)
 			fprints(":\n", stderr, NULL);
 			fprints(err_str(err), stderr, NULL);
 			fprintc('\n', stderr, NULL);
+			term_set_graphics(TG_RESET, stderr, NULL);
+
+			fprints("GOT OUTPUT:\n", stderr, NULL);
+			term_set_graphics(FG_BLUE, stderr, NULL);
+			s_fprint(str, stderr, NULL);
 			term_set_graphics(TG_RESET, stderr, NULL);
 		}
 	}

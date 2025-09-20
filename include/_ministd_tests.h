@@ -29,6 +29,22 @@
 			ERR_VOID(ERR_ASSERT); \
 		} \
 	} while (0)
+#define ASSERT_EQ_MSG(type, a, b, msg) do { \
+		if ((a) != (b)) { \
+			err_t err = ERR_OK; \
+			OUT(s, "Assertion failed " __FILE__ ":"); \
+			OUT(i, ASSERT_LINE); \
+			OUT(s, " :: " #a " ("); \
+			OUT(type, a); \
+			OUT(s, ") == " #b " ("); \
+			OUT(type, b); \
+			OUT(s, ")\n"); \
+			OUT(s, "Failed with message: "); \
+			OUT(s, msg); \
+			OUT(c, '\n'); \
+			ERR_VOID(ERR_ASSERT); \
+		} \
+	} while (0)
 #define ASSERT_NE(type, a, b) do { \
 		if ((a) == (b)) { \
 			err_t err = ERR_OK; \
@@ -42,12 +58,29 @@
 			ERR_VOID(ERR_ASSERT); \
 		} \
 	} while (0)
+#define ASSERT_NE_MSG(type, a, b, msg) do { \
+		if ((a) == (b)) { \
+			err_t err = ERR_OK; \
+			OUT(s, "Assertion failed " __FILE__ ":"); \
+			OUT(i, ASSERT_LINE); \
+			OUT(s, " :: " #a " ("); \
+			OUT(type, a); \
+			OUT(s, ") != " #b " ("); \
+			OUT(type, b); \
+			OUT(s, ")\n"); \
+			OUT(s, "Failed with message: "); \
+			OUT(s, msg); \
+			OUT(c, '\n'); \
+			ERR_VOID(ERR_ASSERT); \
+		} \
+	} while (0)
 #define ASSERT(cond, msg) do { \
 		if (!(cond)) { \
 			err_t err = ERR_OK; \
 			OUT(s, "Assertion failed " __FILE__ ":"); \
 			OUT(i, ASSERT_LINE); \
 			OUT(s, " :: " #cond "\n"); \
+			OUT(s, "Failed with message: "); \
 			OUT(s, msg); \
 			OUT(c, '\n'); \
 			ERR_VOID(ERR_ASSERT); \
