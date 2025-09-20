@@ -82,6 +82,7 @@ setup(void)
 
 	_ministd_io_init();
 }
+#ifdef TEST
 int
 run_test_main(void)
 {
@@ -92,6 +93,7 @@ run_test_main(void)
 
 	return (int)err;
 }
+#endif
 void
 _start(void)
 {
@@ -122,7 +124,7 @@ _start(void)
 
 #ifdef TEST
 	exit(run_test_main());
-#elif
+#else
 	exit(main());
 #endif
 	__builtin_unreachable();
