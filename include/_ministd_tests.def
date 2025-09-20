@@ -1,3 +1,9 @@
-X(atexit)
+/* _ministd_test.c */
 X(assert)
+X(hello_world)
+
+/* ministd.c */
+X(atexit)
+
+/* ministd_atomic.c */
 X(atomics)

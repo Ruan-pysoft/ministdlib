@@ -46,6 +46,16 @@ static TEST_OUTPUT(assert) =
 	"Failed with message: Some important operation produced an error!\n"
 ;
 
+static TEST_FN(hello_world)
+{
+	err_t err = ERR_OK;
+
+	OUT(s, "Hello, world!\n");
+}
+static TEST_OUTPUT(hello_world) =
+	"Hello, world!\n"
+;
+
 #define X(name) TEST_FN(name); extern TEST_OUTPUT(name);
 #include <_ministd_tests.def>
 #undef X
