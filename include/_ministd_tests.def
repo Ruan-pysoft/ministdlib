@@ -10,3 +10,6 @@ X(atomics)
 
 /* ministd_memory.c */
 X(memory)
+
+/* ministd_threads.c */
+X(mutex)
