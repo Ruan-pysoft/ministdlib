@@ -7,3 +7,6 @@ X(atexit)
 
 /* ministd_atomic.c */
 X(atomics)
+
+/* ministd_memory.c */
+X(memory)

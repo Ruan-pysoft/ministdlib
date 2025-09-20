@@ -387,3 +387,57 @@ a_free(Allocator ref this, own_ptr buf)
 {
 	this->free(this, buf);
 }
+
+#ifdef TEST
+#include <_ministd_tests.h>
+#include <ministd_string.h>
+
+static char *allocs[1024];
+const char *test_string = "Hai #.... :3";
+TEST_FN(memory) {
+	err_t err = ERR_OK;
+	usz i;
+
+	OUT(s, "Starting memory test...\n");
+
+	for (i = 0; i < 1024; ++i) {
+		usz j;
+
+		allocs[i] = alloc(16, &err);
+		TRY_VOID(err);
+		for (j = 0; j < strlen(test_string); ++j) {
+			allocs[i][j] = test_string[j];
+		}
+		allocs[i][5] = '0' + (i/1000)%10;
+		allocs[i][6] = '0' + (i/100)%10;
+		allocs[i][7] = '0' + (i/10)%10;
+		allocs[i][8] = '0' + i%10;
+	}
+
+	for (i = 0; i < 1024; i += 128) {
+		OUT(s, allocs[i]);
+		OUT(c, '\n');
+	}
+	OUT(s, allocs[13]);
+	OUT(c, '\n');
+	OUT(s, allocs[1023]);
+	OUT(c, '\n');
+
+	for (i = 0; i < 1024; ++i) {
+		free(allocs[i]);
+	}
+}
+TEST_OUTPUT(memory) =
+	"Starting memory test...\n"
+	"Hai #0000 :3\n"
+	"Hai #0128 :3\n"
+	"Hai #0256 :3\n"
+	"Hai #0384 :3\n"
+	"Hai #0512 :3\n"
+	"Hai #0640 :3\n"
+	"Hai #0768 :3\n"
+	"Hai #0896 :3\n"
+	"Hai #0013 :3\n"
+	"Hai #1023 :3\n"
+;
+#endif
