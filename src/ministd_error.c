@@ -46,6 +46,7 @@ const char ref err_repr(err_t err)
 		case ERR_EOF: return "ERR_EOF";
 		case ERR_PARSE: return "ERR_PARSE";
 		case ERR_ASSERT: return "ERR_ASSERT";
+		case ERR_BOUNDS: return "ERR_BOUNDS";
 	}
 
 	return "ERR_[UNKNOWN]";
@@ -95,6 +96,7 @@ err_str(err_t err)
 		case ERR_EOF: return "Encountered EOF";
 		case ERR_PARSE: return "Parse error";
 		case ERR_ASSERT: return "Assertion error";
+		case ERR_BOUNDS: return "Bounds check error";
 	}
 
 	return "unknown error code";

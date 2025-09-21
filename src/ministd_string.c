@@ -75,10 +75,15 @@ s_from_cstring(const char ref str, err_t ref err_out)
 {
 	return s_from_buffer(str, strlen(str), err_out);
 }
+String own
+s_copy(const String ref other, err_t ref err_out)
+{
+	return s_from_buffer(other->buf, other->len, err_out);
+}
 void
 s_free(String own s)
 {
-	free(s->buf);
+	if (s->buf) free(s->buf);
 	free(s);
 }
 
@@ -96,6 +101,21 @@ s_cstr(const String ref this, err_t ref err_out)
 
 	return res;
 }
+char own
+s_to_cstr(String own this, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	char own res;
+
+	s_push(this, '\0', &err);
+	TRY_WITH(err, NULL);
+
+	res = this->buf;
+	this->buf = NULL;
+	s_free(this);
+
+	return res;
+}
 
 usz
 s_len(const String ref this)
@@ -106,6 +126,22 @@ usz
 s_capacity(const String ref this)
 {
 	return this->cap;
+}
+const char ref
+s_buffer(const String ref this)
+{
+	return this->buf;
+}
+char ref
+s_mut_buffer(String ref this)
+{
+	return this->buf;
+}
+char
+s_at(const String ref this, usz idx, err_t ref err_out)
+{
+	if (idx >= this->len) ERR_WITH(ERR_BOUNDS, '\0');
+	return this->buf[idx];
 }
 void
 s_reserve(String ref this, usz cap, err_t ref err_out)
@@ -130,6 +166,12 @@ void
 s_clear(String ref this)
 {
 	this->len = 0;
+}
+void
+s_set(String ref this, usz idx, char c, err_t ref err_out)
+{
+	if (idx >= this->len) ERR_VOID(ERR_BOUNDS);
+	this->buf[idx] = c;
 }
 void
 s_push(String ref this, char c, err_t ref err_out)
@@ -163,6 +205,11 @@ void
 s_sappend(String ref this, const String ref other, err_t ref err_out)
 {
 	s_append(this, other->buf, other->len, err_out);
+}
+void
+s_cappend(String ref this, const char ref cstr, err_t ref err_out)
+{
+	s_append(this, cstr, strlen(cstr), err_out);
 }
 
 isz
@@ -240,6 +287,46 @@ s_scan(err_t ref err_out)
 void
 s_scan_into(String ref this, err_t ref err_out)
 { s_fscan_into(this, stdin, err_out); }
+
+StringView own
+sv_new(const char ref buf, usz len, err_t ref err_out);
+StringView own
+sv_from_cstring(const char ref str, err_t ref err_out);
+StringView own
+sv_from_string(const String ref str, err_t ref err_out);
+StringView own
+sv_copy(const StringView ref other, err_t ref err_out);
+void
+sv_free(StringView own sv);
+
+char own
+sv_cstr(const StringView ref this, err_t ref err_out);
+char own
+sv_to_cstr(StringView own this, err_t ref err_out);
+String own
+sv_string(const StringView ref this, err_t ref err_out);
+String own
+sv_to_string(StringView own this, err_t ref err_out);
+
+usz
+sv_len(const StringView ref this);
+const char ref
+sv_buffer(const StringView ref this);
+char
+sv_at(const StringView ref this, usz idx, err_t ref err_out);
+void
+sv_move(StringView ref this, const char ref new_buf);
+void
+sv_set_len(StringView ref this, usz new_len);
+void
+sv_grow(StringView ref this, usz grow_by);
+void
+sv_shrink(StringView ref this, usz shrink_by);
+
+isz
+sv_fprint(const StringView ref this, FILE ref file, err_t ref err_out);
+isz
+sv_print(const StringView ref this, err_t ref err_out);
 
 struct StringFile {
 	FILE ptrs;
@@ -364,16 +451,95 @@ srf_run(StringReadFile ref this, enum FILE_OP op, err_t ref err_out)
 	return r;
 }
 
+struct StringViewFile {
+	FILE ptrs;
+	const StringView ref str;
+	usz read_pos;
+};
+
+static usz svf_read(StringViewFile ref this, ptr buf, usz cap,
+		    err_t ref err_out);
+static usz svf_write(StringViewFile ref this, const ptr buf, usz cap,
+		    err_t ref err_out);
+static void svf_close(StringViewFile ref this, err_t ref err_out);
+static usz svf_run(StringViewFile ref this, enum FILE_OP op, err_t ref err_out);
+static const FILE svf_ptrs = {
+	(FILE_read_t)svf_read,
+	(FILE_write_t)svf_write,
+	(FILE_close_t)svf_close,
+	(FILE_run_t)svf_run,
+	0, false,
+};
+
+StringViewFile own
+svf_open(const StringView ref string_view, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	StringViewFile own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->ptrs = svf_ptrs;
+	res->str = string_view;
+	res->read_pos = 0;
+
+	return res;
+}
+
+static usz
+svf_read(StringViewFile ref this, ptr buf, usz cap, err_t ref err_out)
+{
+	const usz readable = this->str->len - this->read_pos;
+	const usz to_read = readable < cap ? readable : cap;
+
+	(void) err_out;
+
+	memmove(buf, &this->str->buf[this->read_pos], to_read);
+	this->read_pos += to_read;
+
+	return to_read;
+}
+static usz
+svf_write(StringViewFile ref this, const ptr buf, usz cap, err_t ref err_out)
+{
+	(void) this;
+	(void) buf;
+	(void) cap;
+
+	ERR_WITH(ERR_BADF, 0);
+}
+static void
+svf_close(StringViewFile ref this, err_t ref err_out)
+{
+	(void) this;
+	(void) err_out;
+}
+static usz
+svf_run(StringViewFile ref this, enum FILE_OP op, err_t ref err_out)
+{
+	usz r = 0;
+
+	(void) this;
+
+	switch (op) {
+		case FO_FLUSH: break;
+		case FO_HASFD: {
+			r = false;
+		break; }
+		case FO_GETFD: {
+			ERR_WITH(ERR_BADF, 0);
+		break; }
+	}
+
+	return r;
+}
+
 #ifdef TEST
 #include <_ministd_tests.h>
 
 static const char ref hello_world = "Hello, world";
 
-static void
-s_append_cstring(String ref this, const char ref str, err_t ref err_out)
-{
-	s_append(this, str, strlen(str), err_out);
-}
 TEST_FN(string) {
 	err_t err = ERR_OK;
 	String own greeting;
@@ -381,9 +547,9 @@ TEST_FN(string) {
 
 	greeting = s_new(&err);
 	ASSERT(err == ERR_OK, "while creating new string");
-	s_append_cstring(greeting, "Hello, ", &err);
+	s_cappend(greeting, "Hello, ", &err);
 	ASSERT(err == ERR_OK, "while appending string");
-	s_append_cstring(greeting, "world", &err);
+	s_cappend(greeting, "world", &err);
 	ASSERT(err == ERR_OK, "while appending string");
 	s_push(greeting, '!', &err);
 	s_push(greeting, '\n', &err);
