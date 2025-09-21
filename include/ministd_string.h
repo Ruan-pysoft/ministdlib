@@ -20,11 +20,13 @@ char own s_to_cstr(String own this, err_t ref err_out);
 
 usz s_len(const String ref this);
 usz s_capacity(const String ref this);
+void s_reserve(String ref this, usz cap, err_t ref err_out);
+void s_grow(String ref this, usz grow_by, err_t ref err_out);
+void s_shrink(String ref this, usz shrink_by, err_t ref err_out);
+
 const char ref s_buffer(const String ref this);
 char ref s_mut_buffer(String ref this);
 char s_at(const String ref this, usz idx, err_t ref err_out);
-void s_reserve(String ref this, usz cap, err_t ref err_out);
-void s_grow(String ref this, usz grow_by, err_t ref err_out);
 
 void s_clear(String ref this);
 void s_set(String ref this, usz idx, char c, err_t ref err_out);
@@ -48,9 +50,8 @@ typedef struct StringView {
 
 StringView own sv_new(const char ref buf, usz len, err_t ref err_out);
 StringView own sv_from_cstring(const char ref str, err_t ref err_out);
-StringView own sv_from_string(const String ref str, err_t ref err_out);
+StringView own sv_from_string(const String ref str, usz idx, err_t ref err_out);
 StringView own sv_copy(const StringView ref other, err_t ref err_out);
-void sv_free(StringView own sv);
 
 char own sv_cstr(const StringView ref this, err_t ref err_out);
 char own sv_to_cstr(StringView own this, err_t ref err_out);
@@ -63,7 +64,7 @@ char sv_at(const StringView ref this, usz idx, err_t ref err_out);
 void sv_move(StringView ref this, const char ref new_buf);
 void sv_set_len(StringView ref this, usz new_len);
 void sv_grow(StringView ref this, usz grow_by);
-void sv_shrink(StringView ref this, usz shrink_by);
+void sv_shrink(StringView ref this, usz shrink_by, err_t ref err_out);
 
 isz sv_fprint(const StringView ref this, FILE ref file, err_t ref err_out);
 isz sv_print(const StringView ref this, err_t ref err_out);

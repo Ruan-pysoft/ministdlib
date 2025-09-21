@@ -127,22 +127,6 @@ s_capacity(const String ref this)
 {
 	return this->cap;
 }
-const char ref
-s_buffer(const String ref this)
-{
-	return this->buf;
-}
-char ref
-s_mut_buffer(String ref this)
-{
-	return this->buf;
-}
-char
-s_at(const String ref this, usz idx, err_t ref err_out)
-{
-	if (idx >= this->len) ERR_WITH(ERR_BOUNDS, '\0');
-	return this->buf[idx];
-}
 void
 s_reserve(String ref this, usz cap, err_t ref err_out)
 {
@@ -160,6 +144,30 @@ void
 s_grow(String ref this, usz grow_by, err_t ref err_out)
 {
 	s_reserve(this, this->cap + grow_by, err_out);
+}
+void
+s_shrink(String ref this, usz shrink_by, err_t ref err_out)
+{
+	if (shrink_by > this->len) ERR_VOID(ERR_OVERFLOW);
+
+	this->len -= shrink_by;
+}
+
+const char ref
+s_buffer(const String ref this)
+{
+	return this->buf;
+}
+char ref
+s_mut_buffer(String ref this)
+{
+	return this->buf;
+}
+char
+s_at(const String ref this, usz idx, err_t ref err_out)
+{
+	if (idx >= this->len) ERR_WITH(ERR_BOUNDS, '\0');
+	return this->buf[idx];
 }
 
 void
@@ -289,44 +297,132 @@ s_scan_into(String ref this, err_t ref err_out)
 { s_fscan_into(this, stdin, err_out); }
 
 StringView own
-sv_new(const char ref buf, usz len, err_t ref err_out);
+sv_new(const char ref buf, usz len, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	StringView own res;
+
+	res = alloc(sizeof(*res), &err);
+	TRY_WITH(err, NULL);
+
+	res->buf = buf;
+	res->len = len;
+
+	return res;
+}
 StringView own
-sv_from_cstring(const char ref str, err_t ref err_out);
+sv_from_cstring(const char ref str, err_t ref err_out)
+{
+	return sv_new(str, strlen(str), err_out);
+}
 StringView own
-sv_from_string(const String ref str, err_t ref err_out);
+sv_from_string(const String ref str, usz idx, err_t ref err_out)
+{
+	if (idx > s_len(str)) ERR_WITH(ERR_OVERFLOW, NULL);
+	return sv_new(&s_buffer(str)[idx], s_len(str) - idx, err_out);
+}
 StringView own
-sv_copy(const StringView ref other, err_t ref err_out);
-void
-sv_free(StringView own sv);
+sv_copy(const StringView ref other, err_t ref err_out)
+{
+	return sv_new(other->buf, other->len, err_out);
+}
 
 char own
-sv_cstr(const StringView ref this, err_t ref err_out);
+sv_cstr(const StringView ref this, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	char own res;
+
+	res = alloc(this->len + 1, &err);
+	TRY_WITH(err, NULL);
+
+	memmove(res, this->buf, this->len);
+	res[this->len] = 0;
+
+	return res;
+}
 char own
-sv_to_cstr(StringView own this, err_t ref err_out);
+sv_to_cstr(StringView own this, err_t ref err_out)
+{
+	char own res = sv_cstr(this, err_out);
+	free(this);
+	return res;
+}
 String own
-sv_string(const StringView ref this, err_t ref err_out);
+sv_string(const StringView ref this, err_t ref err_out)
+{
+	return s_from_buffer(this->buf, this->len, err_out);
+}
 String own
-sv_to_string(StringView own this, err_t ref err_out);
+sv_to_string(StringView own this, err_t ref err_out)
+{
+	String own res = sv_string(this, err_out);
+	free(this);
+	return res;
+}
 
 usz
-sv_len(const StringView ref this);
+sv_len(const StringView ref this)
+{
+	return this->len;
+}
 const char ref
-sv_buffer(const StringView ref this);
+sv_buffer(const StringView ref this)
+{
+	return this->buf;
+}
 char
-sv_at(const StringView ref this, usz idx, err_t ref err_out);
+sv_at(const StringView ref this, usz idx, err_t ref err_out)
+{
+	if (idx >= this->len) ERR_WITH(ERR_BOUNDS, '\0');
+	return this->buf[idx];
+}
 void
-sv_move(StringView ref this, const char ref new_buf);
+sv_move(StringView ref this, const char ref new_buf)
+{
+	this->buf = new_buf;
+}
 void
-sv_set_len(StringView ref this, usz new_len);
+sv_set_len(StringView ref this, usz new_len)
+{
+	this->len = new_len;
+}
 void
-sv_grow(StringView ref this, usz grow_by);
+sv_grow(StringView ref this, usz grow_by)
+{
+	this->len += grow_by;
+}
 void
-sv_shrink(StringView ref this, usz shrink_by);
+sv_shrink(StringView ref this, usz shrink_by, err_t ref err_out)
+{
+	if (shrink_by > this->len) ERR_VOID(ERR_OVERFLOW);
+	this->len -= shrink_by;
+}
 
 isz
-sv_fprint(const StringView ref this, FILE ref file, err_t ref err_out);
+sv_fprint(const StringView ref this, FILE ref file, err_t ref err_out)
+{
+	err_t err = ERR_OK;
+	usz written = 0;
+
+	while (written < this->len) {
+		usz bytes_written;
+
+		bytes_written = write(
+			file, (ptr)(this->buf + written), this->len - written,
+			&err
+		);
+		TRY_WITH(err, 0);
+		if (bytes_written == 0) ERR_WITH(ERR_IO, 0);
+
+		written += bytes_written;
+	}
+
+	return written;
+}
 isz
-sv_print(const StringView ref this, err_t ref err_out);
+sv_print(const StringView ref this, err_t ref err_out)
+{ return sv_fprint(this, stdout, err_out); }
 
 struct StringFile {
 	FILE ptrs;
