@@ -942,13 +942,13 @@ and `strnlen` returns the same up to a maximum length supplied.
 
 They can be used for finding the length of a cstring.
 
-#### String type, creation, and cleanup – `String` and `s_new`, `s_with_capacity`, `s_from_buffer`, `s_from_cstring`, `s_free`
+#### String type, creation, and cleanup – `String` and `s_new`, `s_with_capacity`, `s_from_buffer`, `s_from_cstring`, `s_copy`, `s_free`
 
 **Provided by**: `<ministd_string.h>`
 
 A `String` represents a string with a growable and modifiable buffer.
 
-A new `String` is created with one of four creation functions:
+A new `String` is created with one of five creation functions:
  - `s_new` creates a new `String` with a default capacity
    (currently 128 characters)
  - `s_with_capacity` creates a new `String` with a specified capacity in bytes
@@ -956,19 +956,26 @@ A new `String` is created with one of four creation functions:
    from the given buffer
  - `s_from_cstring` creates a new `String` containing the data
    from the given cstring
+ - `s_copy` creates a new `String` with the same data as the provided `String`
 
-Strings should be freed using `s_free` which also frees its internal buffer,
+`String`s should be freed using `s_free` which also frees its internal buffer,
 rather than using the default `free` function.
 
-#### Converting to cstrings – `s_cstr`
+#### Converting to cstrings – `s_cstr`, `s_to_cstr`
 
 **Provided by**: `<ministd_string.h>`
 
 The `s_cstr` function is used to create a cstring from a `String`.
-Note that if the `String` contains a null byte,
+Note that if the `String` contains a null byte
 then the cstring will end early as it is terminated by a null byte.
 
-#### Managing size – `s_len`, `s_capacity`, `s_reserve`, `s_grow`
+The `s_to_cstr` function does the same,
+but consuming the `String`.
+This means that it can use the same buffer the string had,
+rather than copying all the data over,
+which should be more memory-efficient (and time-efficient).
+
+#### Managing size – `s_len`, `s_capacity`, `s_reserve`, `s_grow`, `s_shrink`
 
 **Provided by**: `<ministd_string.h>`
 
@@ -982,17 +989,37 @@ to be less than the length.
 The `s_grow` function is used to strictly grow the capacity of a `String`
 rather than setting the new capacity arbitrarily.
 
-#### String building – `s_clear`, `s_push`, `s_append`, `s_sappend`
+The `s_shrink` function is used to shrink the length of a `String`.
+If the amount to shrink is greater than the `String`'s length
+an `ERR_OVERFLOW` will be raised.
+
+#### String access – `s_buffer`, `s_mut_buffer`, `s_at`
+
+**Provided by**: `<ministd_string.h>`
+
+The `s_buffer` and `s_mut_buffer` functions
+provide access to the `String`'s underlying buffer,
+with `s_buffer` returning a `const char` buffer
+and `s_mut_buffer` a modifiable `char` buffer.
+
+The `s_at` function allows for string indexing,
+raising an `ERR_BOUNDS` error for out-of-bounds access.
+
+#### String building – `s_clear`, `s_set`, `s_push`, `s_append`, `s_sappend`, `s_cappend`
 
 **Provided by**: `<ministd_string.h>`
 
 `s_clear` is used to empty a `String`.
 
+`s_set` sets a specified character of a `String`.
+It raises an `ERR_BOUNDS` for out-of-bounds access.
+
 `s_push` appends a character to the end of a `String`.
 
-`s_append` and `s_sappend` appends data to the end of a `String`,
-data from a character buffer in the case of `s_append`
-or from another `String` in the case of `s_sappend`.
+`s_append`, `s_sappend`, and `s_cappend` appends data to the end of a `String`,
+data from a character buffer in the case of `s_append`,
+from another `String` in the case of `s_sappend`,
+or from a null-terminated string in the case of `s_cappend`.
 
 #### Printing strings – `s_fprint`, `s_print`
 
@@ -1037,6 +1064,103 @@ and automatically grows the `String` if needed.
 
 `sf_open` is used to create a `StringFile`,
 and `sf_open_readonly` is used to create a `StringReadFile`.
+
+#### StringView type, creation, and cleanup – `StringView` and `sv_new`, `sv_from_cstring`, `sv_from_string`, `sv_copy`
+
+**Provided by**: `<ministd_string.h>`
+
+A `StringView` represents a sized view into a character array.
+The internals of the `StringView` struct is exposed
+in the `<ministd_string.h>` header,
+and is considered part of its public API
+though users should still prefer using provided functions
+rather than raw access.
+
+Having its internals exposed allows users to pre-allocate `StringViews`
+in static buffers and the like,
+instead of working with pointers.
+
+A new `StringView` is created with one of the four creation functions:
+ - `sv_new` creates a new `StringView` pointing at a certain location in memory
+   and with a certain length
+ - `sv_from_cstring` creates a new `StringView`
+   pointing at a certain location in memory
+   with length until the first null byte
+ - `sv_from_string` creates a new `StringView`
+   pointing at a certain location in the provided `String`
+   until the end of said `String`
+ - `sv_copy` creates a new `StringView` with the same data as the provided `StringView`
+
+#### Converting to `String`s and cstrings – `sv_cstr`, `sv_to_cstr`, `sv_string`, `sv_to_string`
+
+**Provided by**: `<ministd_string.h>`
+
+The `sv_cstr` function is used to create a cstring from a `StringView`.
+Note that if the `StringView` contains a null byte
+then the cstring will end early as it is terminated by a null byte.
+
+The `sv_string` function is used to create a `String` from a `StringView`.
+
+`sv_to_cstr` and `sv_to_string` does the same as `sv_cstr` and `sv_string`, respectively,
+except it consumes the `StringView`
+meaning that it does not have to be manually freed afterwards.
+
+These could be used to, for example,
+easily create a cstring from the middle of a buffer:
+
+```c
+char buf[1024];
+char own cstr;
+/* do stuff to fill the buffer */
+cstr = sv_to_cstr(sv_new(&buf[128], 256, NULL), NULL);
+/* cstr is now a null-terminated string
+ * containing the same data as buf[128] to buf[383]
+ */
+```
+
+#### Managing – `sv_len`, `sv_buffer`, `sv_at`, `sv_move`, `sv_set_len`, `sv_grow`, `sv_shrink`
+
+**Provided by**: `<ministd_string.h>`
+
+The length and buffer of a `StringView` can be accessed with
+`sv_len` and `sv_buffer`, respectively.
+
+The `s_at` function allows for indexing,
+raising an `ERR_BOUNDS` error for out-of-bounds access.
+
+The `sv_move` function is used to change
+where the `StringView`'s buffer is pointing.
+
+The `sv_set_len`, `sv_grow`, and `sv_shrink` functions are used
+to manage the `StringView`'s length,
+with `sv_set_len` setting the length,
+`sv_grow` increasing the length,
+and `sv_shrink` increasing the length.
+
+#### Printing string views – `sv_fprint`, `sv_print`
+
+**Provided by**: `<ministd_string.h>`
+
+`sv_fprint` and `sv_print` mimics `fprints` and `prints`,
+printing the contents of the `StringView` to a file or `stdout`.
+
+For more, see the documentation on the `fprint*` family of functions.
+
+#### StringView files – `StringViewFile` and `svf_open`
+
+**Provided by**: `<ministd_string.h>`
+
+`StringViewFile` is a wrapper around a `StringView`
+which allows the user to use the `FILE` interface to interact with `StringView`s,
+meaning that functions from `<ministd_io.h>` and `<ministd_fmt.h>` can be used
+to read from it.
+
+Each `StringViewFile` keeps its own read pointer
+which starts at the beginning of the `StringView`
+from where it reads.
+It will not read past the end of a `StringView`.
+
+`svf_open` is used to create a `StringViewFile`.
 
 ## IO
 
