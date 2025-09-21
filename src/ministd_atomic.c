@@ -28,8 +28,8 @@ LIST_OF_ATOMICS
 		if (order == MO_STRICT) __asm__ volatile("mfence" ::: "memory"); \
 		__asm__ volatile( \
 			"mov (%[atomic]), %[res]" \
-			: [res] "=g" (res) \
-			: [atomic] "g" (&this->val) \
+			: [res] "=r" (res) \
+			: [atomic] "r" (&this->val) \
 			: "memory" \
 		); \
 		return res; \
