@@ -8,6 +8,12 @@ A toy runtime library for c89 made for fun and learning
 Main repo: https://sr.ht/~ruan_p/ministdlib  
 Official github mirror: https://github.com/Ruan-pysoft/ministdlib
 
+Poking around in the header and source files is encouraged.
+I will try to add comments
+wherever the purpose/algorithm of/reason behind some code isn't obvious.
+I will also try to keep my code relatively readable on the whole
+so that comment will not be necessary in most cases.
+
 Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 (though the inline assembly parts might be a gcc extension?).
 It is entirely self-contained and written from scratch by me,
