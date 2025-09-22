@@ -7,10 +7,10 @@
 
 #include <asm/unistd.h>
 
-int __argc;
-char own own __argv;
-int __envc;
-char own own __envp;
+static int __argc;
+static char own own __argv;
+static int __envc;
+static char own own __envp;
 
 int
 argc(void)
@@ -33,6 +33,10 @@ envp(void)
 	return __envp;
 }
 
+/* store exit hooks into a statically-allocated array of a fixed max size
+ * the exit hooks are run on program exit
+ */
+
 #define EXITHOOKS_CAP 64
 static void (ref exithooks[EXITHOOKS_CAP])(void);
 static usz exithooks_count = 0;
@@ -49,6 +53,13 @@ exit(int exitcode)
 	usz i;
 	lcode = exitcode;
 
+	/* run exit hooks in reverse order of registration.
+	 * this allows a pattern of
+	 *  init_comp1(); atexit(deinit_comp1());
+	 *  init_comp2_dep_comp1(); atexit(deinit_comp2_dep_comp1());
+	 * where a later-initialised component will be cleaned up
+	 * before any of its (earlier-initialised) dependencies are cleaned up
+	 */
 	for (i = 0; i < exithooks_count; ++i) {
 		exithooks[exithooks_count - i - 1]();
 	}
@@ -61,6 +72,10 @@ thread_exit(int exitcode)
 {
 	isz lcode, dummy;
 	lcode = exitcode;
+
+	/* no exit hooks run:
+	 * resources still in use by main thread
+	 */
 
 	_syscall1(__NR_exit, dummy, lcode);
 	__builtin_unreachable();
@@ -78,11 +93,13 @@ extern void _ministd_io_init(void);
 void
 setup(void)
 {
+	/* find the length of envp, as the kernel does not provide it */
 	for (__envc = 0; __envp[__envc] != NULL; ++__envc);
 
 	_ministd_io_init();
 }
 #ifdef TEST
+/* alternative entry point for running stdlib tests */
 int
 run_test_main(void)
 {
@@ -97,6 +114,12 @@ run_test_main(void)
 void
 _start(void)
 {
+	/* retrieve argv, argc, envp from stack where the kernel pushed it */
+	/* the _start function is deliberately minimal,
+	 * having no local variables, branches, or loops,
+	 * so that gcc won't place extra stuff on the stack
+	 * and mess up the assembly
+	 */
 	__asm__ volatile(
 		"mov %%rsp, %%rax;" /* sp -> ax */
 		"mov 8(%%rax), %[argc];" /* retrieve argc, top item of stack */
@@ -130,6 +153,9 @@ _start(void)
 	__builtin_unreachable();
 }
 
+/* provided bc at some point gcc wouldn't link without this function defined,
+ * and I might as well have it
+ */
 void
 __stack_chk_fail(void)
 {
