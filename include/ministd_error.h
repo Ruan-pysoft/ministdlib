@@ -3,10 +3,13 @@
 
 #include <_ministd_prelude.h>
 
+/* Error type & error handling convenience functions & macros */
+
 /* honestly, idk if this is cheating,
    but in my defence, this isn't libc but kernel headers */
 #include <linux/errno.h>
 
+/* convenience macros to work with the err_out argument */
 #define SET_ERR(err) do { if (err_out != NULL) *err_out = err; } while (0)
 #define ERR_WITH(err, val) do { if (err_out != NULL) *err_out = err; return val; } while (0)
 #define ERR_VOID(err) do { if (err_out != NULL) *err_out = err; return; } while (0)
@@ -60,6 +63,7 @@ typedef enum err_t {
 
 } err_t;
 
+/* error display functions */
 const char ref err_repr(err_t err);
 const char ref err_str(err_t err);
 void perror(err_t err, const char ref s);
