@@ -13,6 +13,8 @@ I will try to add comments
 wherever the purpose/algorithm of/reason behind some code isn't obvious.
 I will also try to keep my code relatively readable on the whole
 so that comment will not be necessary in most cases.
+For documentationof a function's behaviour,
+search for it in [`features.md`](./features.md).
 
 Built with `-ffreestanding` and `-nostdlib` and 100% c89 code
 (though the inline assembly parts might be a gcc extension?).

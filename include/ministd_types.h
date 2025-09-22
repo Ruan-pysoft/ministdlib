@@ -1,6 +1,7 @@
 #ifndef _RM_STD_TYPES_H
 #define _RM_STD_TYPES_H
 
+/* ownership-indicating pointer aliases */
 #define own *
 #define ref *
 
